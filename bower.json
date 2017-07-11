@@ -1,0 +1,26 @@
+{
+  "name": "polyblog-app",
+  "description": "Polyblog-app application",
+  "main": "index.html",
+  "authors": [
+    "TJ Monserrat"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/tjmonsi/polyblog-app",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src/bower_components/",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.1",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
+  },
+  "devDependencies": {
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1",
+    "web-component-tester": "^6.0.0"
+  }
+}
