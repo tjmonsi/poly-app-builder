@@ -31,7 +31,6 @@ public/
 # Bower stuff.
 bower_components/
 
-public
 build
 public_temp
 public_test

@@ -19,8 +19,8 @@ const files = {
 const brunchStaticProcessor = (build) => {
   return require('html-brunch-static')({
     processors: [
-      require('./plugins/json-brunch-static')(),
-      require('./plugins/sass-brunch-static')()
+      require('./brunch_plugins/json-brunch-static')(),
+      require('./brunch_plugins/sass-brunch-static')()
     ],
     handlebars: {
       enableProcessor: true
@@ -46,7 +46,7 @@ const plugins = {
 }
 
 const paths = {
-  watched: ['src', 'app']
+  watched: ['src', 'core']
 }
 
 const conventions = {
