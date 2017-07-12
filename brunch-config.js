@@ -1,6 +1,6 @@
 // See http://brunch.io for documentation.
-const stylesheet = {joinTo: { 'app.css': 'src/styles/app.css' }}
-const javascript = {
+const stylesheets = {joinTo: { 'app.css': 'src/styles/app.css' }}
+const javascripts = {
   joinTo: {
     'app.js': [
       /^src\/scripts/
@@ -12,8 +12,8 @@ const javascript = {
 }
 
 const files = {
-  javascript,
-  stylesheet
+  javascripts,
+  stylesheets
 }
 
 const brunchStaticProcessor = (build) => {
@@ -29,7 +29,7 @@ const brunchStaticProcessor = (build) => {
 }
 
 const plugins = {
-  copycat: {
+  copyfilemon: {
     'bower_components': ['src/bower_components'],
     'project_components': ['src/project_components'],
     'page_components': ['src/page_components'],
@@ -46,7 +46,7 @@ const plugins = {
 }
 
 const paths = {
-  watched: ['src', 'src_pages']
+  watched: ['src', 'app']
 }
 
 const conventions = {

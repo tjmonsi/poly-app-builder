@@ -19,7 +19,6 @@ SassBrunchStatic = (() => {
   SassBrunchStatic.prototype.handles = /\.static\.(?:scss|sass)$/
 
   SassBrunchStatic.prototype.transformPath = (filename) => {
-    console.log(filename)
     return filename.replace(/\.static\.\w+$/, '.html')
   }
 
