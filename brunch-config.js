@@ -1,59 +1,78 @@
 // See http://brunch.io for documentation.
-const stylesheets = {joinTo: { 'app.css': 'src/styles/app.css' }}
-const javascripts = {
-  joinTo: {
-    'app.js': [
-      /^src\/scripts/
-    ],
-    'vendor.js': [
-      /^node_modules/
-    ]
+const fileProcessor = (build) => {
+  const config = require(`./config/${build}.json`)
+  return {
+    stylesheets: {
+      joinTo: {
+        'app.css': `src/themes/${config.themeName}/styles/global.scss`
+      }
+    },
+    javascripts: {
+      joinTo: {
+        'app.js': [
+          /^core\/scripts/,
+          /^src\/scripts/
+        ],
+        'vendor.js': [
+          /^node_modules/
+        ]
+      }
+    }
   }
 }
 
-const files = {
-  javascripts,
-  stylesheets
-}
-
 const brunchStaticProcessor = (build) => {
+  const config = require(`./config/${build}.json`)
+  config.theme = require(`./src/themes/${config.themeName}/theme.json`)
   return require('html-brunch-static')({
     processors: [
-      require('./brunch_plugins/json-brunch-static')(),
-      require('./brunch_plugins/sass-brunch-static')()
+      require('./brunch_core/plugins/json-brunch-static')(),
+      require('./brunch_core/plugins/sass-brunch-static')()
     ],
+    defaultContext: config,
     handlebars: {
       enableProcessor: true
     }
   })
 }
 
-const plugins = {
-  copyfilemon: {
+const copyProcessor = (build) => {
+  const config = require(`./config/${build}.json`)
+  return {
     'bower_components': ['src/bower_components'],
-    'project_components': ['src/project_components'],
-    'page_components': ['src/page_components'],
-    'test': ['src/test'],
-    'images': ['src/images'],
+    'shell': ['core/shell'],
+    'components': ['core/components', `src/themes/${config.themeName}/components`],
+    'pages': ['core/pages', `src/themes/${config.themeName}/pages`],
+    'test': ['core/test', `src/themes/${config.themeName}/test`],
+    'images': [`src/themes/${config.themeName}/images`],
     verbose: false,
     onlyChanged: true
+  }
+}
+
+const plugins = {
+  copyfilemon: copyProcessor('dev'),
+  sass: {
+    options: {
+      includePaths: ['src/themes/base/styles']
+    }
   },
   static: {
     processors: [
-      brunchStaticProcessor()
+      brunchStaticProcessor('dev')
     ]
   }
 }
 
 const paths = {
-  watched: ['src', 'core']
+  watched: ['src', 'brunch_core/shell', 'core']
 }
 
 const conventions = {
   ignored: [/\/_/, /^config/, /vendor\/(node|j?ruby-.+|bundle)\//, /^src\/bower_components/]
 }
 
-exports.files = files
+exports.files = fileProcessor('dev')
 exports.plugins = plugins
 exports.conventions = conventions
 exports.paths = paths

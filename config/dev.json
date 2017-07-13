@@ -1,0 +1,14 @@
+{
+  "app": {
+    "title": "Polyblog App",
+    "shortTitle": "Polyblog",
+    "description": "Polyblog App Description",
+    "baseHref": "/"
+  },
+  "routing": {
+    "/": {
+      "href": "pages/home-page/home-page.html"
+    }
+  },
+  "themeName": "base"
+}
