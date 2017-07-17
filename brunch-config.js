@@ -4,14 +4,14 @@ const fileProcessor = (build) => {
   return {
     stylesheets: {
       joinTo: {
-        'app.css': `src/themes/${config.themeName}/styles/global.scss`
+        'app.css': `themes/${config.themeName}/styles/global.scss`
       }
     },
     javascripts: {
       joinTo: {
         'app.js': [
           /^core\/scripts/,
-          /^src\/scripts/
+          new RegExp(`themes/${config.themeName}/scripts`)
         ],
         'vendor.js': [
           /^node_modules/
@@ -23,7 +23,7 @@ const fileProcessor = (build) => {
 
 const brunchStaticProcessor = (build) => {
   const config = require(`./config/${build}.json`)
-  config.theme = require(`./src/themes/${config.themeName}/theme.json`)
+  config.theme = require(`./themes/${config.themeName}/theme.json`)
   return require('html-brunch-static')({
     processors: [
       require('./brunch_core/plugins/json-brunch-static')(),
@@ -39,12 +39,12 @@ const brunchStaticProcessor = (build) => {
 const copyProcessor = (build) => {
   const config = require(`./config/${build}.json`)
   return {
-    'bower_components': ['src/bower_components'],
+    'bower_components': ['bower_components'],
     'shell': ['core/shell'],
-    'components': ['core/components', `src/themes/${config.themeName}/components`],
-    'pages': ['core/pages', `src/themes/${config.themeName}/pages`],
-    'test': ['core/test', `src/themes/${config.themeName}/test`],
-    'images': [`src/themes/${config.themeName}/images`],
+    'components': ['core/components', `themes/${config.themeName}/components`],
+    'pages': ['core/pages', `themes/${config.themeName}/pages`],
+    'test': ['core/test', `themes/${config.themeName}/test`],
+    'images': [`themes/${config.themeName}/images`],
     verbose: false,
     onlyChanged: true
   }
@@ -54,7 +54,7 @@ const plugins = {
   copyfilemon: copyProcessor('dev'),
   sass: {
     options: {
-      includePaths: ['src/themes/base/styles']
+      includePaths: ['themes/base/styles']
     }
   },
   static: {
@@ -65,11 +65,11 @@ const plugins = {
 }
 
 const paths = {
-  watched: ['src', 'brunch_core/shell', 'core']
+  watched: ['themes', 'brunch_core/shell', 'core']
 }
 
 const conventions = {
-  ignored: [/\/_/, /^config/, /vendor\/(node|j?ruby-.+|bundle)\//, /^src\/bower_components/]
+  ignored: [/\/_/, /^config/, /vendor\/(node|j?ruby-.+|bundle)\//, /^bower_components/]
 }
 
 exports.files = fileProcessor('dev')

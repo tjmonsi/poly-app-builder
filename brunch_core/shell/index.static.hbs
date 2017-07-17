@@ -33,7 +33,7 @@
 
     <!-- Homescreen icons -->
     {{#each theme.icons}}
-    <link rel="apple-touch-icon" {{#if sizes}}sizes="{{sizes}}"{{/if}} href="images/manifest/{{href}}">
+    <link rel="apple-touch-icon"{{#if sizes}} sizes="{{sizes}}"{{/if}} href="images/manifest/{{href}}">
     {{/each}}
 
     <!-- Tile icon for Windows 8 (144x144 + tile color) -->
@@ -46,7 +46,7 @@
     <meta name="msapplication-tap-highlight" content="{{theme.webApp.tapHighlight}}">
 
     <script src="vendor.js"></script>
-    <script src="app.js" onload="require('core/scripts/app.js');require('src/scripts/app.js')"></script>
+    <script src="app.js" onload="require('core/scripts/app.js');require('themes/{{themeName}}/scripts/app.js')"></script>
     <script>
       // Register the base URL
       const baseUrl = document.querySelector('base').href;

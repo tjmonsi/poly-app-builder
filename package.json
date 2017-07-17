@@ -7,7 +7,7 @@
   "repository": "",
   "scripts": {
     "test": "export LOGGY_STACKS=true && brunch build --env test && standard && cd public_test && npm install && xvfb-run polymer test --skip-plugin sauce",
-    "start": "export LOGGY_STACKS=true && brunch watch --server",
+    "start": "export LOGGY_STACKS=true && brunch watch",
     "serve": "polymer serve public",
     "serve-c9": "polymer serve public -p $PORT -H $IP",
     "polymer-build": "rm -r build && cd temp_build && polymer build && mv build ../build",
