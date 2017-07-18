@@ -23,6 +23,11 @@ const fileProcessor = (build) => {
 
 const brunchStaticProcessor = (build) => {
   const config = require(`./config/${build}.json`)
+  config.routing = Object.assign({}, {
+    '/dashboard': {
+      'href': 'pages/core-dashboard/core-dashboard.html'
+    }
+  }, config.routing)
   config.theme = require(`./themes/${config.themeName}/theme.json`)
   return require('html-brunch-static')({
     processors: [
