@@ -10,5 +10,10 @@
       "href": "pages/home-page/home-page.html"
     }
   },
+  "modules": {
+    "lms-activities": {
+      "path": "modules/lms-activities"
+    }
+  },
   "themeName": "base"
 }

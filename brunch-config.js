@@ -70,7 +70,7 @@ const plugins = {
 }
 
 const paths = {
-  watched: ['themes', 'brunch_core/shell', 'core']
+  watched: ['themes', 'brunch_core/shell', 'core', 'modules']
 }
 
 const conventions = {
