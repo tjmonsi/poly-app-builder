@@ -6,21 +6,16 @@
   "version": "0.0.1",
   "repository": "",
   "scripts": {
-    "test": "export LOGGY_STACKS=true && brunch build --env test && standard && cd public_test && npm install && xvfb-run polymer test --skip-plugin sauce",
-    "start": "export LOGGY_STACKS=true && brunch watch",
+    "test": "xvfb-run polymer test --skip-plugin sauce",
+    "start": "",
     "serve": "polymer serve public",
     "serve-c9": "polymer serve public -p $PORT -H $IP",
-    "polymer-build": "rm -r build && cd temp_build && polymer build && mv build ../build",
-    "build": "export LOGGY_STACKS=true && brunch build --production && npm run polymer-build"
+    "build": ""
   },
   "dependencies": {},
   "devDependencies": {
-    "auto-reload-brunch": "^2",
     "babel-eslint": "^7.2.3",
     "brunch": "^2",
-    "brunch-static": "^1.2.1",
-    "clean-css-brunch": "^2",
-    "copyfilemon-brunch": "^3.3.0",
     "css-slam": "^1.2.1",
     "eslint-plugin-html": "^3.0.0",
     "gulp": "^3.9.1",
@@ -33,8 +28,7 @@
     "node-sass": "^4.5.3",
     "polymer-build": "^1.6.0",
     "sass-brunch": "^2.10.4",
-    "standard": "^10.0.2",
-    "uglify-js-brunch": "^2"
+    "standard": "^10.0.2"
   },
   "standard": {
     "globals": [
