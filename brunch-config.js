@@ -28,6 +28,15 @@ const brunchStaticProcessor = (build) => {
       'href': 'pages/core-dashboard/core-dashboard.html'
     }
   }, config.routing)
+
+  for (var i in config.modules) {
+    var routing = require(config.modules[i].path + '/module.json').routing
+    for (var j in routing) {
+      routing[j].href = 'modules/' + i + '/' + routing[j].href
+    }
+    config.routing = Object.assign({}, config.routing, routing)
+  }
+
   config.theme = require(`./themes/${config.themeName}/theme.json`)
   return require('html-brunch-static')({
     processors: [
@@ -43,16 +52,18 @@ const brunchStaticProcessor = (build) => {
 
 const copyProcessor = (build) => {
   const config = require(`./config/${build}.json`)
-  return {
+  const obj = {
     'bower_components': ['bower_components'],
     'shell': ['core/shell'],
     'components': ['core/components', `themes/${config.themeName}/components`],
     'pages': ['core/pages', `themes/${config.themeName}/pages`],
     'test': ['core/test', `themes/${config.themeName}/test`],
-    'images': [`themes/${config.themeName}/images`],
-    verbose: false,
-    onlyChanged: true
+    'images': [`themes/${config.themeName}/images`]
   }
+  for (var i in config.modules) {
+    obj['modules/' + i] = [config.modules[i].path.replace('./', '')]
+  }
+  return obj
 }
 
 const plugins = {

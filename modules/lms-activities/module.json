@@ -1,5 +1,7 @@
 {
   "routing": {
-    "/activities": "pages/activity-page/activity-page.html"
+    "/activities": {
+      "href": "pages/activity-page/activity-page.html"
+    }
   }
 }

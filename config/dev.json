@@ -12,7 +12,7 @@
   },
   "modules": {
     "lms-activities": {
-      "path": "modules/lms-activities"
+      "path": "./modules/lms-activities"
     }
   },
   "themeName": "base"
