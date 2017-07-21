@@ -1,4 +1,4 @@
 {
-  "directory": "bower_components/",
+  "directory": "dist/public/bower_components/",
   "timeout": 120000
 }

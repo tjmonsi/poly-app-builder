@@ -7,13 +7,11 @@
   },
   "routing": {
     "/": {
-      "href": "pages/home-page/home-page.html"
+      "href": "core/modules/home-page/page/home-page.html"
     }
   },
   "modules": {
-    "lms-activities": {
-      "path": "modules/lms-activities"
-    }
+    "home-page": "core/modules/home-page"
   },
-  "themeName": "base"
+  "theme": "core/modules/default-theme"
 }

@@ -1,0 +1,16 @@
+<link rel="import" href="../../../../dist/public/bower_components/polymer/polymer-element.html">
+
+<dom-module id="component-example">
+  <template>
+
+  </template>
+  <script>
+    (() => {
+      class HomePage extends Polymer.Element {
+        static get is () { return 'component-example' }
+      }
+
+      window.customElements.define(HomePage.is, HomePage)
+    })()
+  </script>
+</dom-module>
