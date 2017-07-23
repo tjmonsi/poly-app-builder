@@ -8,6 +8,7 @@ const tasks = [
   'compile-index',
   'compile-manifest',
   'compile-shell',
+  'compile-permissions',
   'compile-modules-html'
 ]
 
@@ -33,6 +34,11 @@ const watchers = [
     name: 'watch-shell',
     files: [sources.appShell, `core/${buildConfigFile()}`],
     tasks: 'compile-shell'
+  },
+  {
+    name: 'watch-permissions',
+    files: sources.permissions,
+    tasks: 'compile-permissions'
   },
   {
     name: 'watch-modules-html',

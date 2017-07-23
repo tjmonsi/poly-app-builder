@@ -6,12 +6,40 @@
     "baseHref": "/"
   },
   "routing": {
-    "/": {
-      "href": "modules/home-page/page/home-page.html"
+    "home-page": {
+      "href": "modules/home-page/page/home-page.html",
+      "routes": {
+        "/": {
+
+        },
+        "/permissions": {
+          "auth": "permissionsOne"
+        }
+      }
+    },
+    "home-page-2": {
+      "href": "modules/home-page/page/home-page-2.html",
+      "routes": {
+        "/permissions/1": {}
+      }
+    }
+  },
+  "httpCodes": {
+    "not-found": {
+      "node": "not-found-page",
+      "href": "modules/not-found-page/page/not-found-page.html"
+    },
+    "not-authorized": {
+      "node": "not-authorized-page",
+      "href": "modules/not-authorized-page/page/not-authorized-page.html"
     }
   },
   "modules": {
+    "app-router": true,
+    "not-authorized-page": true,
+    "not-found-page": true,
     "home-page": true
   },
-  "theme": "core/modules/default-theme"
+  "theme": "core/modules/default-theme",
+  "analytics": "UA-103026201-1"
 }

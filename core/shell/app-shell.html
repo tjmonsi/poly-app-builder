@@ -1,34 +1,70 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../modules/app-router/app-router.html">
+<link rel="import" href="../permissions/permissions.html">
 
 <dom-module id="app-shell">
   <template>
-    <template is="dom-repeat" items="[[routes]]">
-      [[item.route]]
-    </template>
+
+    <app-router>
+    </app-router>
   </template>
   <script>
     (() => {
-      class AppShell extends Polymer.Element {
+      window.Project = window.Project || {}
+      window.Project.Mixins = window.Project.Mixins || {}
+      class AppShell extends ((typeof window.Project.Mixins.Permissions === 'function') ? window.Project.Mixins.Permissions(Polymer.Element) : Polymer.Element) {
         static get is () { return 'app-shell' }
 
         static get properties () {
-          return {
-            routes: {
-              type: Array,
-              readOnly: true,
-              value: () => {
-                const routes = []
-                for (var i in window.Project.routes) {
-                  routes.push({
-                    route: i,
-                    href: window.Project.routes[i]
-                  })
+          return Object.assign({}, super.properties, {
+
+          })
+        }
+
+        constructor () {
+          super()
+          this.__routes = JSON.parse(JSON.stringify(window.Project.routes))
+          Object.freeze(this.__routes)
+        }
+
+        connectedCallback () {
+          super.connectedCallback()
+          var routes = this.__routes
+          const router = this.shadowRoot.querySelector('app-router')
+          for (var i in routes) {
+            if (!document.head.querySelector(`link[href='${routes[i].href}']`)) {
+              var link = document.createElement('link')
+              link.setAttribute('rel', 'lazy-import')
+              link.setAttribute('node', i)
+              link.setAttribute('href', routes[i].href)
+              document.head.appendChild(link)
+            }
+            for (var j in routes[i].routes) {
+              var flag = true
+              for (var k in router.childNodes) {
+                if (router.childNodes[k].getAttribute && router.childNodes[k].getAttribute('route') === j) {
+                  flag = false
+                  break
                 }
-                return routes
+              }
+              if (flag) {
+                var node = document.createElement(i)
+                node.setAttribute('route', j)
+                node = this.__setRouteAuthentication(node, routes[i].routes[j].auth, router)
               }
             }
           }
+        }
+
+        __setRouteAuthentication (node, auth, router) {
+          if (auth && this[auth]) {
+            node.addEventListener('check-auth', () => {
+              router.authenticate(this[auth].bind(this))
+            })
+            node.setAttribute('auth', '')
+          }
+          router.appendChild(node)
         }
       }
 

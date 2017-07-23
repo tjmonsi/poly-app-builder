@@ -39,7 +39,10 @@
       "$",
       "jQuery",
       "fetch",
-      "Polymer"
+      "Polymer",
+      "CustomEvent",
+      "ga",
+      "performance"
     ],
     "ignore": [
       "node_modules",

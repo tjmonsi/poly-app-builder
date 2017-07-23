@@ -47,13 +47,49 @@
 
     <script>
       // set project namespace
-      window.Project = window.Project || {}
+      Object.defineProperty(window, 'Project', {value: window.Project || {}})
+      // window.Project = window.Project || {}
 
       // set config variables
       window.Project.routes = {
         {{#each routing}}
-        '{{@key}}': '{{href}}',
+        '{{@key}}': {
+          href: '{{href}}',
+          routes: {
+            {{#each routes}}
+            '{{@key}}': {
+              {{#each this}}
+              '{{@key}}': '{{@this}}',
+              {{/each}}
+            },
+            {{/each}}
+          }
+        },
         {{/each}}
+        {{#each httpCodes}}
+        '{{node}}': {
+          href: '{{href}}',
+          routes: {
+            '{{@key}}': {}
+          }
+        },
+        {{/each}}
+      }
+
+      Object.freeze(window.Project.routes)
+
+      window.onerror = (err, url, line) => {
+        console.error(err)
+        try {
+          if (ga) {
+            ga('send', 'exception', {
+              exDescription: err.message,
+              exFatal: true
+            })
+          }
+        } catch(e) {
+          console.error(e)
+        }
       }
 
       // Register the base URL
@@ -75,12 +111,25 @@
 
     <!-- Add any global styles for body, document, etc. -->
 
+    <!-- Add all lazy-imports here -->
   </head>
   <body>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', '{{analytics}}', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+
     <app-shell></app-shell>
     <noscript>
       Please enable JavaScript to view this website.
     </noscript>
     <!-- Built with love using Polymer Starter Kit -->
+
   </body>
 </html>

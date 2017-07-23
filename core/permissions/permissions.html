@@ -1,0 +1,14 @@
+<script>
+  (() => {
+    window.Project = window.Project || {}
+    window.Project.Mixins = window.Project.Mixins || {}
+    window.Project.Mixins.Permissions = (superClass) => {
+      return class extends superClass {
+        // add methods of permissions here
+        permissionsOne () {
+          return false
+        }
+      }
+    }
+  })()
+</script>

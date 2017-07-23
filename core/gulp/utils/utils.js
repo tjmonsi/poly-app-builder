@@ -4,7 +4,8 @@ const sources = {
   modulesHtml: 'core/modules/**/*.html',
   bower: 'bower_components/**/*.*',
   index: 'core/root/*.html',
-  appShell: 'core/shell/*.html'
+  appShell: 'core/shell/app-shell.html',
+  permissions: 'core/permissions/permissions.html'
 }
 
 const buildName = () => {
@@ -26,7 +27,9 @@ const themeConfig = () => {
 }
 
 const destinationFolder = () => {
-  return `dist/${buildName() === 'dev' ? 'public' : buildName()}`
+  var dest = buildName() === 'dev' ? 'public' : buildName()
+  dest = dest === 'prod' ? 'prod_temp' : dest
+  return `dist/${dest}`
 }
 
 module.exports = {
