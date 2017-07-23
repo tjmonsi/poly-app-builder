@@ -20,6 +20,11 @@ const buildConfig = () => {
   return JSON.parse(fs.readFileSync(`core/${buildConfigFile()}`, 'utf8'))
 }
 
+const themeConfig = () => {
+  const config = buildConfig()
+  return JSON.parse(fs.readFileSync(`${config.theme}/theme.json`, 'utf8'))
+}
+
 const destinationFolder = () => {
   return `dist/${buildName() === 'dev' ? 'public' : buildName()}`
 }
@@ -29,5 +34,6 @@ module.exports = {
   buildName,
   buildConfig,
   buildConfigFile,
-  destinationFolder
+  destinationFolder,
+  themeConfig
 }

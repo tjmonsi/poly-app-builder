@@ -1,29 +1,62 @@
 const gulp = require('gulp')
+const fs = require('fs')
+const {sources, buildConfigFile, destinationFolder} = require('./core/gulp/utils/utils')
+const setupWatchers = require('./core/gulp/utils/setup-watchers')
 const tasks = [
   'clean-build',
   'copy-bower',
   'compile-index',
-  'compile-modules-html',
-  'compile-shell'
+  'compile-manifest',
+  'compile-shell',
+  'compile-modules-html'
 ]
 
+const compilerTasks = []
+
 const watchers = [
-  'watch-bower',
-  'watch-index',
-  'watch-shell',
-  'watch-modules-html'
+  {
+    name: 'watch-bower',
+    files: sources.bower,
+    tasks: 'copy-bower'
+  },
+  {
+    name: 'watch-index',
+    files: [sources.index, `core/${buildConfigFile()}`],
+    tasks: 'compile-index'
+  },
+  {
+    name: 'watch-manifest',
+    files: [sources.manifest, `core/${buildConfigFile()}`],
+    tasks: 'compile-manifest'
+  },
+  {
+    name: 'watch-shell',
+    files: [sources.appShell, `core/${buildConfigFile()}`],
+    tasks: 'compile-shell'
+  },
+  {
+    name: 'watch-modules-html',
+    files: [sources.modulesHtml, `core/${buildConfigFile()}`],
+    tasks: 'compile-modules-html'
+  }
 ]
 
 for (var i in tasks) {
   require(`./core/gulp/tasks/${tasks[i]}`)
+  if (tasks[i] !== 'clean-build') {
+    compilerTasks.push(tasks[i])
+  }
 }
 
-for (var j in watchers) {
-  require(`./core/gulp/watchers/${watchers[j]}`)
+setupWatchers(watchers)
+
+const createFolder = (done) => {
+  fs.mkdirSync(destinationFolder())
+  done()
 }
 
-const series = gulp.series('clean-build', gulp.parallel('copy-bower', 'compile-index', 'compile-shell', 'compile-modules-html'))
-const watch = gulp.series('clean-build', gulp.parallel('watch-bower', 'watch-index', 'watch-shell', 'watch-modules-html'))
+const series = gulp.series('clean-build', createFolder, gulp.parallel(compilerTasks))
+const watch = gulp.series('clean-build', createFolder, gulp.parallel(watchers.map((w) => (w.name))))
 
 gulp.task('default', series)
 gulp.task('watch', watch)
