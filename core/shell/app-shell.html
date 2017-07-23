@@ -1,12 +1,35 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/lib/elements/dom-repeat.html">
 
 <dom-module id="app-shell">
   <template>
+    <template is="dom-repeat" items="[[routes]]">
+      [[item.route]]
+    </template>
   </template>
   <script>
     (() => {
       class AppShell extends Polymer.Element {
         static get is () { return 'app-shell' }
+
+        static get properties () {
+          return {
+            routes: {
+              type: Array,
+              readOnly: true,
+              value: () => {
+                const routes = []
+                for (var i in window.Project.routes) {
+                  routes.push({
+                    route: i,
+                    href: window.Project.routes[i]
+                  })
+                }
+                return routes
+              }
+            }
+          }
+        }
       }
 
       window.customElements.define(AppShell.is, AppShell)

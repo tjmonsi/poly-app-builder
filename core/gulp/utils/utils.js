@@ -3,8 +3,8 @@ const fs = require('fs')
 const sources = {
   modulesHtml: 'core/modules/**/*.html',
   bower: 'bower_components/**/*.*',
-  index: 'core/root/index.html',
-  appShell: 'core/shell/app-shell.html'
+  index: 'core/root/*.html',
+  appShell: 'core/shell/*.html'
 }
 
 const buildName = () => {

@@ -26,7 +26,7 @@ const watchers = [
   },
   {
     name: 'watch-manifest',
-    files: [sources.manifest, `core/${buildConfigFile()}`],
+    files: `core/${buildConfigFile()}`,
     tasks: 'compile-manifest'
   },
   {

@@ -8,8 +8,8 @@
   "scripts": {
     "test": "xvfb-run polymer test --skip-plugin sauce",
     "start": "",
-    "serve": "polymer serve public",
-    "serve-c9": "polymer serve public -p $PORT -H $IP",
+    "serve": "polymer serve dist/public",
+    "serve-c9": "polymer serve dist/public -p $PORT -H $IP",
     "build": ""
   },
   "dependencies": {},
