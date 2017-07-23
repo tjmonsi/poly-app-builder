@@ -1,0 +1,15 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="app-shell">
+  <template>
+  </template>
+  <script>
+    (() => {
+      class AppShell extends Polymer.Element {
+        static get is () { return 'app-shell' }
+      }
+
+      window.customElements.define(AppShell.is, AppShell)
+    })()
+  </script>
+</dom-module>

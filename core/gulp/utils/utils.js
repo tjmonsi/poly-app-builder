@@ -1,6 +1,10 @@
+const fs = require('fs')
+
 const sources = {
   modulesHtml: 'core/modules/**/*.html',
-  bower: 'bower_components/**/*.*'
+  bower: 'bower_components/**/*.*',
+  index: 'core/root/index.html',
+  appShell: 'core/shell/app-shell.html'
 }
 
 const buildName = () => {
@@ -8,8 +12,12 @@ const buildName = () => {
   return process.argv.indexOf('--build') > 0 ? process.argv[process.argv.indexOf('--build') + 1] : build
 }
 
+const buildConfigFile = () => {
+  return `config/${buildName()}.json`
+}
+
 const buildConfig = () => {
-  return require(`../../config/${buildName()}.json`)
+  return JSON.parse(fs.readFileSync(`core/${buildConfigFile()}`, 'utf8'))
 }
 
 const destinationFolder = () => {
@@ -20,5 +28,6 @@ module.exports = {
   sources,
   buildName,
   buildConfig,
+  buildConfigFile,
   destinationFolder
 }
