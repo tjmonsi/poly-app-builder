@@ -45,8 +45,6 @@
     <meta name="msapplication-TileColor" content="{{theme.themeColor}}">
     <meta name="msapplication-tap-highlight" content="{{theme.webApp.tapHighlight}}">
 
-    <script src="vendor.js"></script>
-    <script src="app.js" onload="require('core/scripts/app.js');require('themes/{{themeName}}/scripts/app.js')"></script>
     <script>
       // set project namespace
       window.Project = window.Project || {}
@@ -60,8 +58,6 @@
 
       // Register the base URL
       window.Project.baseUrl = document.querySelector('base').href;
-
-
 
       // Load and register pre-caching Service Worker
       if ('serviceWorker' in navigator) {
@@ -78,7 +74,6 @@
     <link rel="import" href="shell/app-shell.html">
 
     <!-- Add any global styles for body, document, etc. -->
-    <link rel="stylesheet" href="app.css">
 
   </head>
   <body>

@@ -1,10 +1,31 @@
 const gulp = require('gulp')
-const compileHtml = require('./core/gulp/compile-html')
+const tasks = [
+  'clean-build',
+  'copy-bower',
+  'compile-index',
+  'compile-modules-html'
+]
 
-gulp.task('compile', function () {
-  return gulp.src(['core/modules/**/**/*.html'])
-    .pipe(compileHtml)
-    .pipe(gulp.dest('dist/public/modules'))
+const watchers = [
+  'watch-bower',
+  'watch-modules-html'
+]
+
+for (var i in tasks) {
+  require(`./core/gulp/tasks/${tasks[i]}`)
+}
+
+for (var j in watchers) {
+  require(`./core/gulp/watchers/${watchers[j]}`)
+}
+
+gulp.task('compile-shell', () => {
+  return gulp.src(['core/shell/app-shell.html'])
 })
 
-gulp.task('default', gulp.series('compile'))
+const series = gulp.series('clean-build', gulp.parallel('copy-bower', 'compile-index', 'compile-modules-html'))
+const watch = gulp.series('clean-build', gulp.parallel('watch-bower', 'watch-modules-html'))
+
+gulp.task('default', series)
+gulp.task('watch', watch)
+gulp.task('build', gulp.series(series))
