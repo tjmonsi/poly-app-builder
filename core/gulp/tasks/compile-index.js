@@ -4,7 +4,12 @@ const {buildConfig, destinationFolder, sources} = require('../utils/utils')
 
 gulp.task('compile-index', () => {
   const hbStream = hb({
-    data: buildConfig()
+    data: buildConfig(),
+    helpers: {
+      compileRouting: (options) => {
+        return JSON.stringify(Object.assign({}, options.data.global.routing, options.data.global.httpCodes))
+      }
+    }
   })
   return gulp.src(sources.index)
     .pipe(hbStream)

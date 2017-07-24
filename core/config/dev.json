@@ -5,34 +5,29 @@
     "description": "Polyblog App System Description",
     "baseHref": "/"
   },
+  "fragments": {
+    "home-page": "modules/home-page/page/home-page.html",
+    "not-found-page": "modules/not-found-page/page/not-found-page.html",
+    "not-authorized-page": "modules/not-authorized-page/page/not-authorized-page.html"
+  },
   "routing": {
-    "home-page": {
-      "href": "modules/home-page/page/home-page.html",
-      "routes": {
-        "/": {
-
-        },
-        "/permissions": {
-          "auth": "permissionsOne"
-        }
+    "/": {
+      "node": "home-page"
+    },
+    "/permissions": {
+      "node": "home-page",
+      "auth": "permissionsOne",
+      "subroutes": {
+        "/1": {
+          "node": "home-page-2"
+        } 
       }
     },
-    "home-page-2": {
-      "href": "modules/home-page/page/home-page-2.html",
-      "routes": {
-        "/permissions/1": {}
-      }
-    }
+    "/p": "home-page-2"
   },
   "httpCodes": {
-    "not-found": {
-      "node": "not-found-page",
-      "href": "modules/not-found-page/page/not-found-page.html"
-    },
-    "not-authorized": {
-      "node": "not-authorized-page",
-      "href": "modules/not-authorized-page/page/not-authorized-page.html"
-    }
+    "not-found": "not-found-page",
+    "not-authorized": "not-authorized-page"
   },
   "modules": {
     "app-router": true,

@@ -24,7 +24,7 @@
 
         constructor () {
           super()
-          this.__routes = JSON.parse(JSON.stringify(window.Project.routes))
+          Object.defineProperty(this, '__routes', { value: JSON.parse(window.Project.__routes) })
           Object.freeze(this.__routes)
         }
 
@@ -32,39 +32,34 @@
           super.connectedCallback()
           var routes = this.__routes
           const router = this.shadowRoot.querySelector('app-router')
-          for (var i in routes) {
-            if (!document.head.querySelector(`link[href='${routes[i].href}']`)) {
-              var link = document.createElement('link')
-              link.setAttribute('rel', 'lazy-import')
-              link.setAttribute('node', i)
-              link.setAttribute('href', routes[i].href)
-              document.head.appendChild(link)
-            }
-            for (var j in routes[i].routes) {
-              var flag = true
-              for (var k in router.childNodes) {
-                if (router.childNodes[k].getAttribute && router.childNodes[k].getAttribute('route') === j) {
-                  flag = false
-                  break
-                }
-              }
-              if (flag) {
-                var node = document.createElement(i)
-                node.setAttribute('route', j)
-                node = this.__setRouteAuthentication(node, routes[i].routes[j].auth, router)
-              }
-            }
-          }
+          this.__setRoutes(router, routes)
         }
-
-        __setRouteAuthentication (node, auth, router) {
-          if (auth && this[auth]) {
-            node.addEventListener('check-auth', () => {
-              router.authenticate(this[auth].bind(this))
-            })
-            node.setAttribute('auth', '')
+        
+        __setRoutes (router, routes, parentRoute, auth) {
+          for (var i in routes) {
+            if (!routes[i].node) {
+              var node = document.createElement(routes[i])
+              node.setAttribute('route', i)
+              router.appendChild(node)
+            } else {
+              var node = document.createElement(routes[i].node)
+              var route = parentRoute ? parentRoute + i : i
+              auth = routes[i].auth ? routes[i].auth : auth
+              node.setAttribute('route', route)
+              if (auth && this[auth]) {
+                node.addEventListener('check-auth', () => {
+                  router.authenticate(this[auth].bind(this))
+                })
+                node.setAttribute('auth', '')
+              }
+              router.appendChild(node)
+              
+              if (routes[i].subroutes) {
+                this.__setRoutes(router, routes[i].subroutes, route, auth)
+              }
+            }
+            
           }
-          router.appendChild(node)
         }
       }
 

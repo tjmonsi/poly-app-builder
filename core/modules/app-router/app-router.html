@@ -349,8 +349,11 @@
                 })
               }
               console.error(err)
-              this.__newRoute = 'not-found'
-              this.__loadView()
+              if (this.__newRoute !== 'not-found') {
+                this.__newRoute = 'not-found'
+                this.__loadView()  
+              }
+              
             })
           } else {
             this.__changeView()
