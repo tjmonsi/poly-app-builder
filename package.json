@@ -7,6 +7,8 @@
   "repository": "",
   "scripts": {
     "test": "xvfb-run polymer test --skip-plugin sauce",
+    "postinstall": "./bower-install.bash",
+    "bower": "./bower-install.bash",
     "start": "",
     "serve": "polymer serve dist/public",
     "serve-c9": "polymer serve dist/public -p $PORT -H $IP",
@@ -15,7 +17,6 @@
   "dependencies": {},
   "devDependencies": {
     "babel-eslint": "^7.2.3",
-    "brunch": "^2",
     "css-slam": "^1.2.1",
     "del": "^3.0.0",
     "eslint-plugin-html": "^3.0.0",
