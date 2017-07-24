@@ -42,5 +42,6 @@ module.exports = {
   buildConfig,
   buildConfigFile,
   destinationFolder,
-  themeConfig
+  themeConfig,
+  getVersion
 }

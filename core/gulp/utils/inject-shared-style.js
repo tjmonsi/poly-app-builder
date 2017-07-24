@@ -46,4 +46,4 @@ const injectSharedStyle = () => {
   })
 }
 
-module.exports = correctBowerPath
+module.exports = injectSharedStyle

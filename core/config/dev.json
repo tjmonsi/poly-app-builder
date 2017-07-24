@@ -37,6 +37,6 @@
   },
   "theme": {
     "src": "core/modules/default-theme"
-  }
+  },
   "analytics": "UA-103026201-1"
 }
