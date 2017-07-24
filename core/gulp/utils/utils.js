@@ -8,6 +8,10 @@ const sources = {
   permissions: 'core/permissions/permissions.html'
 }
 
+const getVersion = () => {
+  return JSON.parse(fs.readFileSync('package.json'), 'utf8').version
+}
+
 const buildName = () => {
   var build = process.argv.indexOf('build') > 0 ? 'prod' : 'dev'
   return process.argv.indexOf('--build') > 0 ? process.argv[process.argv.indexOf('--build') + 1] : build
@@ -23,7 +27,7 @@ const buildConfig = () => {
 
 const themeConfig = () => {
   const config = buildConfig()
-  return JSON.parse(fs.readFileSync(`${config.theme}/theme.json`, 'utf8'))
+  return JSON.parse(fs.readFileSync(`${config.theme.src}/theme.json`, 'utf8'))
 }
 
 const destinationFolder = () => {

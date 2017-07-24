@@ -47,8 +47,12 @@
 
     <script>
       // set project namespace
-      Object.defineProperty(window, 'Project', {value: window.Project || {}})
-      // window.Project = window.Project || {}
+      Object.defineProperty(window, 'Project', { value: window.Project || {}})
+      
+      // set project build
+      Object.defineProperty(Project, '__build', { value: '{{build}}' })
+      
+      Object.defineProperty(Project, '__version', { value: '{{version}}' })
 
       // set config variables
       Object.defineProperty(Project, '__routes', { value: '{{#compileRouting}}{{/compileRouting}}' })

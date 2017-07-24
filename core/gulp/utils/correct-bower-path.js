@@ -4,7 +4,6 @@ const parse5 = require('parse5')
 
 const prefixStream = (prefixText) => {
   var stream = through()
-  console.log(prefixText)
   stream.write(prefixText)
   return stream
 }
