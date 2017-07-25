@@ -8,7 +8,7 @@ const tasks = [
   'compile-index',
   'compile-manifest',
   'compile-shell',
-  'compile-permissions',
+  'compile-opts',
   'compile-modules-html'
 ]
 
@@ -36,9 +36,9 @@ const watchers = [
     tasks: 'compile-shell'
   },
   {
-    name: 'watch-permissions',
-    files: sources.permissions,
-    tasks: 'compile-permissions'
+    name: 'watch-opts',
+    files: sources.opts,
+    tasks: 'compile-opts'
   },
   {
     name: 'watch-modules-html',

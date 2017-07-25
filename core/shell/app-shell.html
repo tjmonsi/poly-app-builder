@@ -1,7 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/polymer/lib/elements/dom-repeat.html">
 <link rel="import" href="../modules/app-router/app-router.html">
-<link rel="import" href="../permissions/permissions.html">
+<link rel="import" href="../opts/permissions.html">
 
 <dom-module id="app-shell">
   <template>
@@ -34,31 +34,24 @@
           const router = this.shadowRoot.querySelector('app-router')
           this.__setRoutes(router, routes)
         }
-        
+
         __setRoutes (router, routes, parentRoute, auth) {
           for (var i in routes) {
-            if (!routes[i].node) {
-              var node = document.createElement(routes[i])
-              node.setAttribute('route', i)
-              router.appendChild(node)
-            } else {
-              var node = document.createElement(routes[i].node)
-              var route = parentRoute ? parentRoute + i : i
-              auth = routes[i].auth ? routes[i].auth : auth
-              node.setAttribute('route', route)
-              if (auth && this[auth]) {
-                node.addEventListener('check-auth', () => {
-                  router.authenticate(this[auth].bind(this))
-                })
-                node.setAttribute('auth', '')
-              }
-              router.appendChild(node)
-              
-              if (routes[i].subroutes) {
-                this.__setRoutes(router, routes[i].subroutes, route, auth)
-              }
+            var node = document.createElement(routes[i].node ? routes[i].node : routes[i])
+            var route = parentRoute ? parentRoute + i : i
+            auth = routes[i].auth ? routes[i].auth : auth
+            node.setAttribute('route', route)
+            if (auth && this[auth]) {
+              node.addEventListener('check-auth', () => {
+                router.authenticate(this[auth].bind(this))
+              })
+              node.setAttribute('auth', '')
             }
-            
+            router.appendChild(node)
+
+            if (routes[i].subroutes) {
+              this.__setRoutes(router, routes[i].subroutes, route, auth)
+            }
           }
         }
       }

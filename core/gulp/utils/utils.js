@@ -5,7 +5,7 @@ const sources = {
   bower: 'bower_components/**/*.*',
   index: 'core/root/*.html',
   appShell: 'core/shell/app-shell.html',
-  permissions: 'core/permissions/permissions.html'
+  opts: 'core/opts/*.html'
 }
 
 const getVersion = () => {

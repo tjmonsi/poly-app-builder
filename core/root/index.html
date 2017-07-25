@@ -48,10 +48,10 @@
     <script>
       // set project namespace
       Object.defineProperty(window, 'Project', { value: window.Project || {}})
-      
+
       // set project build
       Object.defineProperty(Project, '__build', { value: '{{build}}' })
-      
+
       Object.defineProperty(Project, '__version', { value: '{{version}}' })
 
       // set config variables
@@ -66,17 +66,17 @@
               exFatal: true
             })
           }
-        } catch(e) {
+        } catch (e) {
           console.error(e)
         }
       }
 
       // Register the base URL
-      window.Project.baseUrl = document.querySelector('base').href;
+      window.Project.baseUrl = document.querySelector('base').href
 
       // Load and register pre-caching Service Worker
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
+        window.addEventListener('load', () => {
           navigator.serviceWorker.register(window.Project.baseUrl + 'service-worker.js');
         });
       }
