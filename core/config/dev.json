@@ -3,10 +3,12 @@
     "title": "Polyblog App",
     "shortTitle": "Polyblog",
     "description": "Polyblog App System Description",
-    "baseHref": "/"
+    "baseHref": "/",
+    "analytics": "UA-103026201-1"
   },
   "modules": {
     "app-router": true,
+    "firebase-mixin": true,
     "not-authorized-page": true,
     "not-found-page": true,
     "home-page": true,
@@ -16,7 +18,6 @@
     "src": "core/modules/default-theme",
     "ignoreComponents": []
   },
-  "analytics": "UA-103026201-1",
   "fragments": {
     "home-page": "modules/home-page/page/home-page.html",
     "not-found-page": "modules/not-found-page/page/not-found-page.html",

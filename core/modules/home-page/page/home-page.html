@@ -1,20 +1,35 @@
 <link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../../firebase-mixin/firebase-mixin.html">
 
 <dom-module id="home-page">
   <template>
     <style>
     </style>
 
-    Hellos
-
     <div class="container">
       Hello there
     </div>
+
+    <template is="dom-repeat" items="[[test]]">
+      [[item.val]]
+    </template>
   </template>
   <script>
     (() => {
-      class HomePage extends Polymer.Element {
+      class HomePage extends Project.Mixins.FirebaseMixin(Polymer.Element) {
         static get is () { return 'home-page' }
+
+        static get properties () {
+          return {
+            test: {
+              type: Array,
+              path: 'test',
+              orderBy: 'child',
+              child: 'val'
+            }
+          }
+        }
       }
 
       window.customElements.define(HomePage.is, HomePage)
