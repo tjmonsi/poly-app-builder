@@ -30,6 +30,7 @@
     "merge-stream": "^1.0.1",
     "node-sass": "^4.5.3",
     "parse5": "^3.0.2",
+    "parse5-utils": "^2.0.0",
     "polymer-build": "^1.6.0",
     "sass-brunch": "^2.10.4",
     "standard": "^10.0.2",

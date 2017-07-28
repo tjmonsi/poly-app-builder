@@ -5,6 +5,18 @@
     "description": "Polyblog App System Description",
     "baseHref": "/"
   },
+  "modules": {
+    "app-router": true,
+    "not-authorized-page": true,
+    "not-found-page": true,
+    "home-page": true,
+    "default-theme": true
+  },
+  "theme": {
+    "src": "core/modules/default-theme",
+    "ignoreComponents": []
+  },
+  "analytics": "UA-103026201-1",
   "fragments": {
     "home-page": "modules/home-page/page/home-page.html",
     "not-found-page": "modules/not-found-page/page/not-found-page.html",
@@ -20,7 +32,7 @@
       "subroutes": {
         "/1": {
           "node": "home-page-2"
-        } 
+        }
       }
     },
     "/p": "home-page-2"
@@ -28,15 +40,5 @@
   "httpCodes": {
     "not-found": "not-found-page",
     "not-authorized": "not-authorized-page"
-  },
-  "modules": {
-    "app-router": true,
-    "not-authorized-page": true,
-    "not-found-page": true,
-    "home-page": true
-  },
-  "theme": {
-    "src": "core/modules/default-theme"
-  },
-  "analytics": "UA-103026201-1"
+  }
 }

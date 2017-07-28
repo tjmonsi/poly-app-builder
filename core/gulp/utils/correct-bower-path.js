@@ -21,25 +21,25 @@ const correctBowerPath = () => {
         if (child.tagName === 'link') {
           for (var j in child.attrs) {
             if (child.attrs[j].name === 'href') {
-              child.attrs[j].value = child.attrs[j].value.replace(new RegExp('../bower_components/', 'g'), 'bower_components/')
+              document.childNodes[i].attrs[j].value = child.attrs[j].value.replace(new RegExp('../bower_components/', 'g'), 'bower_components/')
             }
           }
         } else if (child.tagName === 'script') {
           for (var k in child.attrs) {
             if (child.attrs[k].name === 'src') {
-              child.attrs[k].value = child.attrs[k].value.replace(new RegExp('../bower_components/', 'g'), 'bower_components/')
+              document.childNodes[i].attrs[k].value = child.attrs[k].value.replace(new RegExp('../bower_components/', 'g'), 'bower_components/')
             }
           }
         }
       }
-      string = parse5.serialize(document)
+      var newString = parse5.serialize(document)
 
       if (file.isBuffer()) {
-        file.contents = Buffer.concat([Buffer.from(string)])
+        file.contents = Buffer.concat([Buffer.from(newString)])
       }
 
       if (file.isStream()) {
-        file.contents = prefixStream(Buffer.from(string))
+        file.contents = prefixStream(Buffer.from(newString))
       }
     }
     cb(null, file)
