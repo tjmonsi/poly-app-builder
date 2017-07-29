@@ -63,9 +63,14 @@ const createFolder = (done) => {
   done()
 }
 
-const series = gulp.series('clean-build', createFolder, gulp.parallel(compilerTasks))
-const watch = gulp.series('clean-build', createFolder, gulp.parallel(watchers.map((w) => (w.name))))
+const generateSW = (done) => {
+  fs.writeFileSync(`${destinationFolder()}/service-worker.js`, 'console.log("Development version. Will not cache files")', 'utf8')
+  done()
+}
 
-gulp.task('default', series)
+const series = gulp.series('clean-build', createFolder, gulp.parallel(compilerTasks))
+const watch = gulp.series('clean-build', createFolder, generateSW, gulp.parallel(watchers.map((w) => (w.name))))
+
+gulp.task('default', gulp.series(series, generateSW))
 gulp.task('watch', watch)
-gulp.task('build', gulp.series(series))
+gulp.task('build', gulp.series(series, 'polymer-build', 'generate-sw'))

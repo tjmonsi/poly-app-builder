@@ -1,11 +1,11 @@
-<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../../bower_components/polymer/lib/utils/flattened-nodes-observer.html">
-<link rel="import" href="../../../bower_components/iron-location/iron-location.html">
-<link rel="import" href="../../../bower_components/iron-location/iron-query-params.html">
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/lib/utils/flattened-nodes-observer.html">
+<link rel="import" href="../../bower_components/iron-location/iron-location.html">
+<link rel="import" href="../../bower_components/iron-location/iron-query-params.html"><link rel="import" href="./../default-theme/default-theme.html">
 
 <dom-module id="app-router">
   <template>
-    <style is="custom-style">
+    <style is="custom-style default-theme">
       div[role='main'] {
         position: relative;
       }
@@ -43,13 +43,8 @@
       }
     </style>
 
-    <iron-location
-        path="{{path}}"
-        query="{{__query}}"
-        hash="{{hash}}"></iron-location>
-    <iron-query-params
-        params-string="{{__query}}"
-        params-object="{{queryParams}}"></iron-query-params>
+    <iron-location path="{{path}}" query="{{__query}}" hash="{{hash}}"></iron-location>
+    <iron-query-params params-string="{{__query}}" params-object="{{queryParams}}"></iron-query-params>
 
     <div role="main">
       <slot></slot>
@@ -102,9 +97,9 @@
 
         constructor () {
           super()
-          // if (performance) {
-          //   console.log('Customized App Router constructor called: ' + (performance.now() - window.globalStart))
-          // }
+          if (performance) {
+            console.log('Customized App Router constructor called: ' + (performance.now() - window.globalStart))
+          }
           this.__lazyImportArea = null
           Object.defineProperty(this, '__routes', { value: {} })
           Object.defineProperty(this, '__nodes', { value: {} })
@@ -160,9 +155,9 @@
             ga('send', 'timing', 'app-router', '__contentAdded', performance.now() - startTime)
           }
 
-          // if (performance) {
-          //   console.log('Pages loaded in the customized app router: ' + (performance.now() - window.globalStart))
-          // }
+          if (performance) {
+            console.log('Pages loaded in the customized app router: ' + (performance.now() - window.globalStart))
+          }
 
           this.__pathChanged(this.path)
         }
@@ -325,9 +320,9 @@
             throw new Error(`no node existing for route: ${this.__newRoute}`)
           }
 
-          // if (performance) {
-          //   console.log('Start loading the page component: ' + (performance.now() - window.globalStart))
-          // }
+          if (performance) {
+            console.log('Start loading the page component: ' + (performance.now() - window.globalStart))
+          }
 
           if (!this.__nodes[newView.element.nodeName.toLowerCase()].loaded) {
             new Promise((resolve, reject) => {
@@ -409,9 +404,9 @@
             }
           })
 
-          // if (performance) {
-          //   console.log('Component viewed in customized router: ' + (performance.now() - window.globalStart))
-          // }
+          if (performance) {
+            console.log('Component viewed in customized router: ' + (performance.now() - window.globalStart))
+          }
 
           if (ga) {
             ga('set', 'page', this.path)

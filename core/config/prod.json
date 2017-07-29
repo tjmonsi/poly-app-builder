@@ -2,16 +2,39 @@
   "app": {
     "title": "Polyblog App",
     "shortTitle": "Polyblog",
-    "description": "Polyblog App Description",
-    "baseHref": "/"
+    "description": "Polyblog App System Description",
+    "baseHref": "/",
+    "analytics": "UA-103026201-1"
+  },
+  "modules": {
+    "app-router": true,
+    "firebase-mixin": true,
+    "not-authorized-page": true,
+    "not-found-page": true,
+    "home-page": true,
+    "default-theme": true
+  },
+  "theme": {
+    "src": "core/modules/default-theme",
+    "ignoreComponents": []
+  },
+  "fragments": {
+    "home-page": "modules/home-page/page/home-page.html",
+    "not-found-page": "modules/not-found-page/page/not-found-page.html",
+    "not-authorized-page": "modules/not-authorized-page/page/not-authorized-page.html"
   },
   "routing": {
     "/": {
-      "href": "modules/home-page/page/home-page.html"
-    }
+      "node": "home-page"
+    },
+    "/p": "home-page-2"
   },
-  "modules": {
-    "home-page": true
+  "httpCodes": {
+    "not-found": "not-found-page",
+    "not-authorized": "not-authorized-page"
   },
-  "theme": "core/modules/default-theme"
+  "serviceWorker": {
+    "globIgnores": [],
+    "runtimeCaching": []
+  }
 }

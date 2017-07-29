@@ -103,9 +103,9 @@
                 data.push(value)
               })
             }
-            // if (performance) {
-            //   console.log('Data loaded from Firebase SDK: ' + (performance.now() - window.globalStart))
-            // }
+            if (performance) {
+              console.log('Data loaded from Firebase SDK: ' + (performance.now() - window.globalStart))
+            }
             setValue(name, data, readOnly)
             element.__refs[path].__initialLoadDone = true
           } else {
@@ -198,9 +198,9 @@
           ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)](child)
         }
 
-        // if (performance) {
-        //   console.log('Started listening from Firebase using SDK: ' + (performance.now() - window.globalStart))
-        // }
+        if (performance) {
+          console.log('Started listening from Firebase using SDK: ' + (performance.now() - window.globalStart))
+        }
 
         if (type === Array) {
           element.__refs[path] = element.__refs[path] || {
@@ -263,9 +263,9 @@
         ref = ref + queryParams.join('&')
         var flag = true
 
-        // if (performance) {
-        //   console.log('Loaded the data from localDB (pouchDB): ' + (performance.now() - window.globalStart))
-        // }
+        if (performance) {
+          console.log('Loaded the data from localDB (pouchDB): ' + (performance.now() - window.globalStart))
+        }
         getLocal(path, name, type, db, readOnly)
 
         if (Project.__firebaseFetch[ref]) {
@@ -280,14 +280,14 @@
           Project.__firebaseFetch[ref] = {
             time: new Date()
           }
-          // if (performance) {
-          //   console.log('Started fetching using Firebase REST: ' + (performance.now() - window.globalStart))
-          // }
+          if (performance) {
+            console.log('Started fetching using Firebase REST: ' + (performance.now() - window.globalStart))
+          }
           fetch(ref)
             .then((response) => {
-              // if (performance) {
-              //   console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
-              // }
+              if (performance) {
+                console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
+              }
               return response.json()
             })
             .then((json) => {
@@ -316,9 +316,9 @@
 
 
           if (!window.firebase) {
-            // if (performance) {
-            //   console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
-            // }
+            if (performance) {
+              console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
+            }
             const src = 'https://www.gstatic.com/firebasejs/4.1.4/firebase.js'
             var script = document.createElement('script')
             var t = document.getElementsByTagName('script')[0]
@@ -327,9 +327,9 @@
             script.src = src
             script.onload = script.onreadstatechange = () => {
               firebase.initializeApp(Project.__firebaseConfig)
-              // if (performance) {
-              //   console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
-              // }
+              if (performance) {
+                console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
+              }
               getFirebase(property, name, db)
             }
             if (!document.head.querySelector(`#firebase-script`)) {
@@ -405,9 +405,9 @@
         connectedCallback () {
           super.connectedCallback()
           var startTime
-          // if (performance) {
-          //   console.log('Started binding the firebase path to a property: ' + (performance.now() - window.globalStart))
-          // }
+          if (performance) {
+            console.log('Started binding the firebase path to a property: ' + (performance.now() - window.globalStart))
+          }
           const properties = collect(this.constructor, 'properties')
           bind(this, properties, startTime)
         }
