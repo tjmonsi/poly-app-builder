@@ -1,8 +1,10 @@
 <script>
   (() => {
-    window.Project = window.Project || {}
-    window.Project.Mixins = window.Project.Mixins || {}
     window.Project.Mixins.AuthFunctions = (superClass) => {
+      /**
+      * @polymer
+      * @extends HTMLElement
+      */
       return class extends superClass {
         // add methods of permissions here
         permissionsOne () {

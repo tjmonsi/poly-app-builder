@@ -1,14 +1,21 @@
 const gulp = require('gulp')
 const fs = require('fs')
 const wbBuild = require('workbox-build')
-const { destinationFolder, buildName } = require('../utils/utils')
+const { destinationFolder, buildName, buildConfig } = require('../utils/utils')
 
 gulp.task('generate-sw', (done) => {
+  var config = buildConfig()
   wbBuild.generateSW({
-    swDest: `${destinationFolder()}/sw.js`,
-    globDirectory: destinationFolder(),
+    cacheId: config.app.shortTitle,
+    swDest: `${destinationFolder()}/build/sw.js`,
+    globDirectory: destinationFolder() + '/build',
+    navigateFallback: '/index.html',
+    navigateFallbackWhitelist: [
+      [/^(?!(\/__)|(\/service-worker\.js))/]
+    ],
     globIgnores: ['service-worker.js', 'sw.js', 'workbox-sw.prod.v1.1.0.js', 'workbox-sw.prod.v1.1.0.js.map'],
     skipWaiting: true,
+    handleFetch: buildName() === 'dev',
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/maps.googleapis.com\/.*/,
@@ -27,9 +34,9 @@ gulp.task('generate-sw', (done) => {
     console.log('Automated Service worker generated.')
   })
 
-  var str = buildName() === 'dev' ? fs.readFileSync('core/service-worker/dev-service-worker.js', 'utf8') : 'importScripts(`sw.js`);'
+  var str = 'importScripts(`sw.js`);'
 
-  fs.writeFileSync(`${destinationFolder()}/service-worker.js`, str, 'utf8')
+  fs.writeFileSync(`${destinationFolder()}/build/service-worker.js`, str, 'utf8')
 
   done()
 })

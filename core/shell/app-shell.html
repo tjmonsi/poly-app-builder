@@ -12,8 +12,6 @@
   </template>
   <script>
     (() => {
-      window.Project = window.Project || {}
-      window.Project.Mixins = window.Project.Mixins || {}
       class AppShell extends ((typeof window.Project.Mixins.Permissions === 'function') ? window.Project.Mixins.Permissions(Polymer.Element) : Polymer.Element) {
         static get is () { return 'app-shell' }
 

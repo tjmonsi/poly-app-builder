@@ -10,7 +10,8 @@ const tasks = [
   'compile-shell',
   'compile-opts',
   'compile-modules-html',
-  'generate-sw'
+  'generate-sw',
+  'polymer-build'
 ]
 
 const compilerTasks = []
@@ -50,7 +51,7 @@ const watchers = [
 
 for (var i in tasks) {
   require(`./core/gulp/tasks/${tasks[i]}`)
-  if (tasks[i] !== 'clean-build' && tasks[i] !== 'generate-sw') {
+  if (tasks[i] !== 'clean-build' && tasks[i] !== 'generate-sw' && tasks[i] !== 'polymer-build') {
     compilerTasks.push(tasks[i])
   }
 }

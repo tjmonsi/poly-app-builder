@@ -2,9 +2,6 @@
 
 <script>
   (() => {
-    window.Project = window.Project || {}
-    window.Project.Mixins = window.Project.Mixins || {}
-
     const bind = (element, properties) => {
       var bindings = Object.keys(properties)
         .filter((name) => {
@@ -371,6 +368,10 @@
     }
 
     window.Project.Mixins.FirebaseMixin = (superClass) => {
+      /**
+      * @polymer
+      * @extends HTMLElement
+      */
       return class extends superClass {
         constructor () {
           super()
