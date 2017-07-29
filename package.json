@@ -34,7 +34,8 @@
     "polymer-build": "^1.6.0",
     "sass-brunch": "^2.10.4",
     "standard": "^10.0.2",
-    "through2": "^2.0.3"
+    "through2": "^2.0.3",
+    "workbox-build": "^1.2.0"
   },
   "standard": {
     "globals": [

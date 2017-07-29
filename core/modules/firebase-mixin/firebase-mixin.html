@@ -1,3 +1,5 @@
+<link rel="import" href="pouchdb.html">
+
 <script>
   (() => {
     window.Project = window.Project || {}
@@ -14,10 +16,41 @@
         })
 
       const onError = (err) => {
-        console.log(err)
+        console.error(err)
       }
 
-      const getFirebase = (property, name) => {
+      const updateLocal = (path, data, type, db) => {
+        db.upsert(path, (doc) => {
+          type === Array ? doc.array = data : doc.obj = data
+          return doc
+        })
+      }
+
+      const setValue = (name, value, readOnly) => {
+        if (readOnly) {
+          element._setProperty(name, value)
+        } else {
+          element[name] = value
+        }
+      }
+
+      const getLocal = (path, name, type, db, readOnly) => {
+        db.get(path)
+          .then((doc) => {
+            if (type === Array) {
+              setValue(name, doc.array, readOnly)
+            } else {
+              setValue(name, doc.obj, readOnly)
+            }
+          })
+          .catch((err) => {
+            if (err.name !== 'not_found') {
+              console.log(err)
+            }
+          })
+      }
+
+      const getFirebase = (property, name, db) => {
         const {
           path,
           readOnly,
@@ -34,16 +67,6 @@
           orderBy,
           child
         } = property
-
-        console.log('firebase')
-
-        const setValue = (name, value) => {
-          if (readOnly) {
-            element._setProperty(name, value)
-          } else {
-            element[name] = value
-          }
-        }
 
         const indexFromKey = (data, key) => {
           if (key != null) {
@@ -83,11 +106,12 @@
                 data.push(value)
               })
             }
-            setValue(name, data)
+            setValue(name, data, readOnly)
             element.__refs[path].__initialLoadDone = true
           } else {
-            setValue(name, snapshot.val())
+            setValue(name, snapshot.val(), readOnly)
           }
+          updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildAdded = (snapshot, previousChildKey) => {
@@ -100,6 +124,8 @@
             element.__refs[path].__map[key] = value
             element.splice(name, previousChildIndex + 1, 0, value)
           }
+
+          updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildRemoved = (snapshot) => {
@@ -109,6 +135,8 @@
             element.__refs[path].__map[key] = null
             element.splice(name, indexFromKey(key), 1)
           }
+
+          updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildChanged = (snapshot) => {
@@ -133,6 +161,8 @@
               element.set([name, index], value)
             }
           }
+
+          updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildMoved = (snapshot, previousChildKey) => {
@@ -146,8 +176,11 @@
             element.__refs[path].__map[key] = value
             element.splice(name, index, 1)
             element.splice(name, targetIndex, 0, value)
+            updateLocal(path, element[name], type, db)
           }
         }
+
+        getLocal(path, name, type, db, readOnly)
 
         var ref = firebase.database().ref(path)
         var on = readOnce ? 'once' : 'on'
@@ -169,7 +202,14 @@
           element.__refs[path] = element.__refs[path] || {
             __onOnce: false,
             __initialLoadDone: false,
-            __map: {}
+            __map: {},
+            functions: {
+              'onFirebaseValue': onFirebaseValue,
+              'onFirebaseChildAdded': onFirebaseChildAdded,
+              'onFirebaseChildRemoved': onFirebaseChildRemoved,
+              'onFirebaseChildChanged': onFirebaseChildChanged,
+              'onFirebaseChildMoved': onFirebaseChildMoved
+            }
           }
 
           element.__refs[path].ref = element.__refs[path].ref || ref
@@ -178,20 +218,20 @@
             element.__refs[path].__onOnce = true
             element.__refs[path].__initialLoadDone = false
 
-            element.__refs[path].ref[on]('value', onFirebaseValue, onError)
+            element.__refs[path].ref[on]('value', element.__refs[path].functions.onFirebaseValue, onError)
             if (!readOnce) {
-              element.__refs[path].ref[on]('child_added', onFirebaseChildAdded, onError)
-              element.__refs[path].ref[on]('child_removed', onFirebaseChildRemoved, onError)
-              element.__refs[path].ref[on]('child_changed', onFirebaseChildChanged, onError)
-              element.__refs[path].ref[on]('child_moved', onFirebaseChildMoved, onError)
+              element.__refs[path].ref[on]('child_added', element.__refs[path].functions.onFirebaseChildAdded, onError)
+              element.__refs[path].ref[on]('child_removed', element.__refs[path].functions.onFirebaseChildRemoved, onError)
+              element.__refs[path].ref[on]('child_changed', element.__refs[path].functions.onFirebaseChildChanged, onError)
+              element.__refs[path].ref[on]('child_moved', element.__refs[path].functions.onFirebaseChildMoved, onError)
             }
           }
         } else {
-          element.__refs[path].ref[on]('value', onFirebaseValue, onError)
+          element.__refs[path].ref[on]('value', element.__refs[path].functions.onFirebaseValue, onError)
         }
       }
 
-      const getFirebaseAPI = (property, name) => {
+      const getFirebaseAPI = (property, name, db) => {
         const {
           path,
           readOnly,
@@ -204,14 +244,6 @@
           orderBy,
           child
         } = property
-
-        const setValue = (name, value) => {
-          if (readOnly) {
-            element._setProperty(name, value)
-          } else {
-            element[name] = value
-          }
-        }
 
         const queryParams = []
 
@@ -226,12 +258,13 @@
 
         ref = ref + queryParams.join('&')
         var flag = true
+        getLocal(path, name, type, db, readOnly)
 
         if (Project.__firebaseFetch[ref]) {
           var fetcher = Project.__firebaseFetch[ref].time
           if (new Date() - fetcher.time <= 10) {
             flag = false
-            setValue(name, fetcher.value)
+            setValue(name, fetcher.value, readOnly)
           }
         }
 
@@ -244,7 +277,6 @@
               return response.json()
             })
             .then((json) => {
-
               if (type === Array) {
                 var data = []
                 for (var i in json) {
@@ -258,41 +290,67 @@
                   })
                 }
                 Project.__firebaseFetch[ref].value = data
-                setValue(name, data)
+                setValue(name, data, readOnly)
+                updateLocal(path, data, type, db)
               } else {
                 Project.__firebaseFetch[ref].value = json
-                setValue(name, json)
+                setValue(name, json, readOnly)
+                updateLocal(path, json, type, db)
               }
               return Promise.resolve()
             })
-            .then(() => {
-              if (!window.firebase) {
-                var script = document.createElement('script')
-                var t = document.getElementsByTagName('script')[0]
-                script.type = 'text/javascript'
-                script.src = 'https://www.gstatic.com/firebasejs/4.1.4/firebase.js'
-                script.onload = script.onreadstatechange = () => {
-                  firebase.initializeApp(Project.__firebaseConfig)
-                  getFirebase(property, name)
-                }
-                t.parentNode.insertBefore(script, t)
-              }
-            })
-        }
 
+          if (!window.firebase) {
+            const src = 'https://www.gstatic.com/firebasejs/4.1.4/firebase.js'
+            var script = document.createElement('script')
+            var t = document.getElementsByTagName('script')[0]
+            script.type = 'text/javascript'
+            script.id = 'firebase-script'
+            script.src = src
+            script.onload = script.onreadstatechange = () => {
+              firebase.initializeApp(Project.__firebaseConfig)
+              getFirebase(property, name, db)
+            }
+            if (!document.head.querySelector(`#firebase-script`)) {
+              t.parentNode.insertBefore(script, t)
+            }
+          }
+        }
       }
 
       const update = () => {
         bindings.forEach(name => {
+          var { path, auth } = properties[name]
+          var paths = new window.PouchDB('paths')
+          paths.upsert(path, (doc) => {
+            doc.path = path
+            doc.auth = auth
+            return doc
+          })
+
+          var db = new window.PouchDB(path, {auto_compaction: true})
+
           if (window.firebase) {
-            getFirebase(properties[name], name)
+            getFirebase(properties[name], name, db)
           } else {
-            getFirebaseAPI(properties[name], name)
+            getFirebaseAPI(properties[name], name, db)
           }
         })
       }
 
       return update()
+    }
+
+    const unbind = (element) => {
+      for (var path in element.__refs) {
+        if (element.__refs[path].functions) {
+          element.__refs[path].ref.off('value', element.__refs[path].functions.onFirebaseValue, this)
+          element.__refs[path].ref.off('child_added', element.__refs[path].functions.onFirebaseChildAdded, this)
+          element.__refs[path].ref.off('child_removed', element.__refs[path].functions.onFirebaseChildRemoved, this)
+          element.__refs[path].ref.off('child_changed', element.__refs[path].functions.onFirebaseChildChanged, this)
+          element.__refs[path].ref.off('child_moved', element.__refs[path].functions.onFirebaseChildMoved, this)
+        }
+      }
     }
 
     /**
@@ -316,7 +374,6 @@
       return class extends superClass {
         constructor () {
           super()
-
           Object.defineProperty(this, '__refs', { value: {} })
         }
 
@@ -324,6 +381,11 @@
           super.connectedCallback()
           const properties = collect(this.constructor, 'properties')
           bind(this, properties)
+        }
+
+        disconnectedCallback () {
+          super.disconnectedCallback()
+          unbind(this)
         }
       }
     }

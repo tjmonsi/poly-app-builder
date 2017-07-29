@@ -41,5 +41,9 @@
   "httpCodes": {
     "not-found": "not-found-page",
     "not-authorized": "not-authorized-page"
+  },
+  "serviceWorker": {
+    "globIgnores": [],
+    "runtimeCaching": []
   }
 }
