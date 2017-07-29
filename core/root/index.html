@@ -81,7 +81,13 @@
       // Load and register pre-caching Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register(window.Project.baseUrl + 'service-worker.js');
+          navigator.serviceWorker.register(window.Project.baseUrl + 'service-worker.js').then(() => {
+            if (navigator.serviceWorker.controller) {
+              console.log('The service worker is currently handling network operations.')
+            } else {
+              console.log('Please reload this page to allow the service worker to handle network operations.')
+            }
+          })
         });
       }
     </script>

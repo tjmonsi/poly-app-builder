@@ -7,7 +7,6 @@
   "repository": "",
   "scripts": {
     "test": "xvfb-run polymer test --skip-plugin sauce",
-    "postinstall": "./bower-install.bash",
     "bower": "./bower-install.bash",
     "start": "",
     "serve": "polymer serve dist/public",
@@ -37,7 +36,9 @@
     "sass-brunch": "^2.10.4",
     "standard": "^10.0.2",
     "through2": "^2.0.3",
-    "workbox-build": "^1.2.0"
+    "workbox-build": "^1.2.0",
+    "workbox-routing": "^1.1.0",
+    "workbox-sw": "^1.1.0"
   },
   "standard": {
     "globals": [

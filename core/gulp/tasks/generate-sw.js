@@ -10,10 +10,18 @@ gulp.task('generate-sw', (done) => {
     swDest: `${destinationFolder()}/build/sw.js`,
     globDirectory: destinationFolder() + '/build',
     navigateFallback: '/index.html',
+    // clientsClaim: true,
     navigateFallbackWhitelist: [
       [/^(?!(\/__)|(\/service-worker\.js))/]
     ],
-    globIgnores: ['service-worker.js', 'sw.js', 'workbox-sw.prod.v1.1.0.js', 'workbox-sw.prod.v1.1.0.js.map'],
+    globIgnores: [
+      'service-worker.js', 
+      'sw.js',
+      'routing-sw.js',
+      'workbox-sw.prod.v1.1.0.js', 
+      'workbox-sw.prod.v1.1.0.js.map',
+      'workbox-routing.v1.1.0.js' 
+    ],
     skipWaiting: true,
     handleFetch: buildName() === 'dev',
     runtimeCaching: [
@@ -34,8 +42,10 @@ gulp.task('generate-sw', (done) => {
     console.log('Automated Service worker generated.')
   })
 
-  var str = 'importScripts(`sw.js`);'
+  var str = 'importScripts(`sw.js`); importScripts("routing-sw.js");'
 
+  fs.writeFileSync(`${destinationFolder()}/build/workbox-routing.v1.1.0.js`, fs.readFileSync('node_modules/workbox-routing/build/importScripts/workbox-routing.dev.v1.1.0.js', 'utf8'), 'utf8')
+  fs.writeFileSync(`${destinationFolder()}/build/routing-sw.js`, fs.readFileSync('core/service-worker/routing.js', 'utf8'), 'utf8')
   fs.writeFileSync(`${destinationFolder()}/build/service-worker.js`, str, 'utf8')
 
   done()
