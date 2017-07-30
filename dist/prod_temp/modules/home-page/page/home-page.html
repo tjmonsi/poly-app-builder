@@ -26,17 +26,18 @@
               type: Array,
               path: 'test',
               orderBy: 'child',
-              child: 'val'
+              child: 'val',
+              desc: true
             }
           }
         }
 
-        constructor () {
-          super()
-          if (performance) {
-            console.log('Home page constructor called: ' + (performance.now() - window.globalStart))
-          }
-        }
+        // constructor () {
+        //   super()
+        //   if (performance) {
+        //     console.log('Home page constructor called: ' + (performance.now() - window.globalStart))
+        //   }
+        // }
       }
 
       window.customElements.define(HomePage.is, HomePage)

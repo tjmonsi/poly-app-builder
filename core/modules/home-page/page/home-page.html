@@ -12,6 +12,10 @@
     </div>
 
     <template is="dom-repeat" items="[[test]]">
+      [[item.name]]:[[item.value]]<br/>
+    </template>
+
+    <template is="dom-repeat" items="[[test2]]">
       [[item.val]]
     </template>
   </template>
@@ -24,10 +28,53 @@
           return {
             test: {
               type: Array,
-              path: 'test',
+              path: '[[key]]/[[key2.val]]',
+              desc: true,
+              limitToLast: 3,
               orderBy: 'child',
-              child: 'val',
-              desc: true
+              child: 'value'
+              // paginated: true
+            },
+
+            // test2: {
+            //   type: Array,
+            //   path: '[[key3]]',
+            //   orderBy: 'child',
+            //   child: 'val',
+            //   desc: true
+            // },
+
+            // test3: {
+            //   type: Array,
+            //   path: '[[key]]/[[key2.val]]',
+            //   orderBy: 'child',
+            //   child: 'val',
+            //   desc: true
+            // },
+
+            // test4: {
+            //   type: Array,
+            //   path: '[[key2.val]]/[[key]]',
+            //   orderBy: 'child',
+            //   child: 'val',
+            //   desc: true
+            // },
+
+            key: {
+              type: String,
+              value: 'testGroup'
+            },
+
+            key2: {
+              type: String,
+              value: {
+                val: 'data'
+              }
+            },
+
+            key3: {
+              type: String,
+              value: 'test'
             }
           }
         }

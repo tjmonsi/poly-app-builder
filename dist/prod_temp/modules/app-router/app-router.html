@@ -97,9 +97,9 @@
 
         constructor () {
           super()
-          if (performance) {
-            console.log('Customized App Router constructor called: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('Customized App Router constructor called: ' + (performance.now() - window.globalStart))
+          // }
           this.__lazyImportArea = null
           Object.defineProperty(this, '__routes', { value: {} })
           Object.defineProperty(this, '__nodes', { value: {} })
@@ -155,9 +155,9 @@
             ga('send', 'timing', 'app-router', '__contentAdded', performance.now() - startTime)
           }
 
-          if (performance) {
-            console.log('Pages loaded in the customized app router: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('Pages loaded in the customized app router: ' + (performance.now() - window.globalStart))
+          // }
 
           this.__pathChanged(this.path)
         }
@@ -320,9 +320,9 @@
             throw new Error(`no node existing for route: ${this.__newRoute}`)
           }
 
-          if (performance) {
-            console.log('Start loading the page component: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('Start loading the page component: ' + (performance.now() - window.globalStart))
+          // }
 
           if (!this.__nodes[newView.element.nodeName.toLowerCase()].loaded) {
             new Promise((resolve, reject) => {
@@ -404,9 +404,9 @@
             }
           })
 
-          if (performance) {
-            console.log('Component viewed in customized router: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('Component viewed in customized router: ' + (performance.now() - window.globalStart))
+          // }
 
           if (ga) {
             ga('set', 'page', this.path)

@@ -16,13 +16,6 @@
         console.error(err)
       }
 
-      const updateLocal = (path, data, type, db) => {
-        db.upsert(path, (doc) => {
-          type === Array ? doc.array = data : doc.obj = data
-          return doc
-        })
-      }
-
       const setValue = (name, value, readOnly) => {
         if (readOnly) {
           element._setProperty(name, value)
@@ -31,21 +24,147 @@
         }
       }
 
-      const getLocal = (path, name, type, db, readOnly) => {
-        db.get(path)
-          .then((doc) => {
-            if (type === Array) {
-              setValue(name, doc.array, readOnly)
-            } else {
-              setValue(name, doc.obj, readOnly)
+      const updateLocalDB = (property, data, del) => {
+        const { path, child } = property
+        var db = new window.PouchDB(path, {auto_compaction: true})
+        if (child) {
+          db.createIndex({
+            index: {
+              fields: [child]
             }
           })
-          .catch((err) => {
-            if (err.name !== 'not_found') {
-              console.log(err)
-            }
-          })
+        }
+        if (!del) {
+          for (var i in data) {
+            db.upsert(i, (doc) => {
+              doc.$key = doc._id
+              typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id]
+              return doc
+            })
+          }
+        } else {
+          for (var j in data) {
+            db.get(j).then((doc) => (db.remove(doc)))
+          }
+        }
       }
+
+      const getLocalDB = (property, name) => {
+        const {
+          path,
+          readOnly,
+          type,
+          startAt,
+          endAt,
+          equalTo,
+          // limitToLast,
+          // limitToFirst,
+          orderBy,
+          child,
+          desc
+        } = property
+        const db = new window.PouchDB(path, {auto_compaction: true})
+
+        const find = {}
+
+        if (orderBy === 'child' && child) {
+          find.sort = [child]
+        } else if (orderBy === 'value') {
+          find.sort = ['value']
+        } else {
+          find.sort = ['_id']
+        }
+
+        find.selector = {}
+        find.selector[find.sort[0]] = {}
+
+        if (startAt) {
+          find.selector[find.sort[0]] = {
+            $gte: startAt
+          }
+        }
+
+        if (endAt) {
+          find.selector[find.sort[0]] = Project.__extends({}, find.selector[find.sort[0]], {
+            $lte: endAt
+          })
+        }
+
+        if (equalTo) {
+          find.selector[find.sort[0]] = {
+            $eq: equalTo
+          }
+        }
+
+        if ((startAt === undefined || startAt === null) && (endAt === undefined || endAt === null) && (equalTo === undefined || equalTo === null)) {
+          find.selector[find.sort[0]] = {
+            $gt: null
+          }
+        }
+
+        if (desc) {
+          var descObj = {}
+          descObj[find.sort[0]] = 'desc'
+          find.sort = [descObj]
+        }
+        console.log(find)
+        // find.sort = null
+
+        db.find(find).then((result) => {
+          var data
+          if (type === Array) {
+            data = []
+            for (var i in result.docs) {
+              data.push(result.docs[i])
+            }
+            if (orderBy === 'child' && child) {
+              data.sort((p, q) => {
+                return desc ? q[child] - p[child] : p[child] - q[child]
+              })
+            } else if (orderBy === 'key') {
+              data.sort((p, q) => {
+                return desc ? p.$key - q.$key : q.$key - p.$key
+              })
+            } else if (orderBy === 'value') {
+              data.sort((p, q) => {
+                return desc ? p.value - q.value : q.value - p.value
+              })
+            }
+          } else {
+            data = {}
+            for (var j in result.docs) {
+              data[j] = result.docs[i].val
+            }
+          }
+          console.log(data)
+          setValue(name, data, readOnly)
+        }).catch((err) => {
+          console.error(err)
+        })
+      }
+
+      // const updateLocal = (path, data, type, db) => {
+      //   db.upsert(path, (doc) => {
+      //     type === Array ? doc.array = data : doc.obj = data
+      //     return doc
+      //   })
+      // }
+
+      // const getLocal = (path, name, type, db, readOnly) => {
+      //   db.get(path)
+      //     .then((doc) => {
+      //       if (type === Array) {
+      //         setValue(name, doc.array, readOnly)
+      //       } else {
+      //         setValue(name, doc.obj, readOnly)
+      //       }
+      //     })
+      //     .catch((err) => {
+      //       if (err.name !== 'not_found') {
+      //         console.log(err)
+      //       }
+      //     })
+      // }
 
       const getFirebase = (property, name, db) => {
         const {
@@ -62,7 +181,8 @@
           limitToLast,
           limitToFirst,
           orderBy,
-          child
+          child,
+          desc
         } = property
 
         const indexFromKey = (data, key) => {
@@ -103,15 +223,21 @@
                 data.push(value)
               })
             }
-            if (performance) {
-              console.log('Data loaded from Firebase SDK: ' + (performance.now() - window.globalStart))
+
+            if (desc) {
+              data.reverse()
             }
+            // if (performance) {
+            //   console.log('Data loaded from Firebase SDK: ' + (performance.now() - window.globalStart))
+            // }
             setValue(name, data, readOnly)
             element.__refs[path].__initialLoadDone = true
           } else {
             setValue(name, snapshot.val(), readOnly)
           }
-          updateLocal(path, element[name], type, db)
+
+          updateLocalDB(property, snapshot.val())
+          // updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildAdded = (snapshot, previousChildKey) => {
@@ -122,10 +248,18 @@
             var previousChildIndex = indexFromKey(element[name], previousChildKey)
             value = snapshotToValue(snapshot)
             element.__refs[path].__map[key] = value
-            element.splice(name, previousChildIndex + 1, 0, value)
+            if (desc) {
+              element.splice(name, previousChildIndex - 1, 0, value)
+            } else {
+              element.splice(name, previousChildIndex + 1, 0, value)
+            }
           }
 
-          updateLocal(path, element[name], type, db)
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
+
+          updateLocalDB(property, obj)
+          // updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildRemoved = (snapshot) => {
@@ -136,7 +270,11 @@
             element.splice(name, indexFromKey(key), 1)
           }
 
-          updateLocal(path, element[name], type, db)
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
+
+          updateLocalDB(property, obj, true)
+          // updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildChanged = (snapshot) => {
@@ -161,8 +299,11 @@
               element.set([name, index], value)
             }
           }
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
 
-          updateLocal(path, element[name], type, db)
+          updateLocalDB(property, obj)
+          // updateLocal(path, element[name], type, db)
         }
 
         const onFirebaseChildMoved = (snapshot, previousChildKey) => {
@@ -176,11 +317,16 @@
             element.__refs[path].__map[key] = value
             element.splice(name, index, 1)
             element.splice(name, targetIndex, 0, value)
-            updateLocal(path, element[name], type, db)
+            // updateLocal(path, element[name], type, db)
+
+            var obj = {}
+            obj[snapshot.key] = snapshot.val()
+
+            updateLocalDB(property, obj)
           }
         }
 
-        getLocal(path, name, type, db, readOnly)
+        // getLocal(path, name, type, db, readOnly)
 
         var ref = firebase.database().ref(path)
         var on = readOnce ? 'once' : 'on'
@@ -198,9 +344,9 @@
           ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)](child)
         }
 
-        if (performance) {
-          console.log('Started listening from Firebase using SDK: ' + (performance.now() - window.globalStart))
-        }
+        // if (performance) {
+        //   console.log('Started listening from Firebase using SDK: ' + (performance.now() - window.globalStart))
+        // }
 
         if (type === Array) {
           element.__refs[path] = element.__refs[path] || {
@@ -263,10 +409,10 @@
         ref = ref + queryParams.join('&')
         var flag = true
 
-        if (performance) {
-          console.log('Loaded the data from localDB (pouchDB): ' + (performance.now() - window.globalStart))
-        }
-        getLocal(path, name, type, db, readOnly)
+        // if (performance) {
+        //   console.log('Loaded the data from localDB (pouchDB): ' + (performance.now() - window.globalStart))
+        // }
+        // getLocal(path, name, type, db, readOnly)
 
         if (Project.__firebaseFetch[ref]) {
           var fetcher = Project.__firebaseFetch[ref]
@@ -280,17 +426,18 @@
           Project.__firebaseFetch[ref] = {
             time: new Date()
           }
-          if (performance) {
-            console.log('Started fetching using Firebase REST: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('Started fetching using Firebase REST: ' + (performance.now() - window.globalStart))
+          // }
           fetch(ref)
             .then((response) => {
-              if (performance) {
-                console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
-              }
+              // if (performance) {
+              //   console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
+              // }
               return response.json()
             })
             .then((json) => {
+              updateLocalDB(property, json)
               if (type === Array) {
                 var data = []
                 for (var i in json) {
@@ -305,20 +452,20 @@
                 }
                 Project.__firebaseFetch[ref].value = data
                 setValue(name, data, readOnly)
-                updateLocal(path, data, type, db)
+                // updateLocal(path, data, type, db)
               } else {
                 Project.__firebaseFetch[ref].value = json
                 setValue(name, json, readOnly)
-                updateLocal(path, json, type, db)
+                // updateLocal(path, json, type, db)
               }
               return Promise.resolve()
             })
 
 
           if (!window.firebase) {
-            if (performance) {
-              console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
-            }
+            // if (performance) {
+            //   console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
+            // }
             const src = 'https://www.gstatic.com/firebasejs/4.1.4/firebase.js'
             var script = document.createElement('script')
             var t = document.getElementsByTagName('script')[0]
@@ -327,9 +474,9 @@
             script.src = src
             script.onload = script.onreadstatechange = () => {
               firebase.initializeApp(Project.__firebaseConfig)
-              if (performance) {
-                console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
-              }
+              // if (performance) {
+              //   console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
+              // }
               getFirebase(property, name, db)
             }
             if (!document.head.querySelector(`#firebase-script`)) {
@@ -342,19 +489,19 @@
       const update = () => {
         bindings.forEach(name => {
           var { path, auth } = properties[name]
-          var paths = new window.PouchDB('paths')
+          var paths = new window.PouchDB('paths', {auto_compaction: true})
           paths.upsert(path, (doc) => {
             doc.path = path
             doc.auth = auth
             return doc
           })
 
-          var db = new window.PouchDB(path, {auto_compaction: true})
+          getLocalDB(properties[name], name)
 
           if (window.firebase) {
-            getFirebase(properties[name], name, db)
+            getFirebase(properties[name], name)
           } else {
-            getFirebaseAPI(properties[name], name, db)
+            getFirebaseAPI(properties[name], name)
           }
         })
       }
@@ -405,9 +552,9 @@
         connectedCallback () {
           super.connectedCallback()
           var startTime
-          if (performance) {
-            console.log('Started binding the firebase path to a property: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('Started binding the firebase path to a property: ' + (performance.now() - window.globalStart))
+          // }
           const properties = collect(this.constructor, 'properties')
           bind(this, properties, startTime)
         }

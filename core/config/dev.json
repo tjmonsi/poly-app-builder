@@ -4,7 +4,8 @@
     "shortTitle": "Polyblog",
     "description": "Polyblog App System Description",
     "baseHref": "/",
-    "analytics": "UA-103026201-1"
+    "analytics": "UA-103026201-1",
+    "firebaseVersion": "4.1.4"
   },
   "modules": {
     "app-router": true,

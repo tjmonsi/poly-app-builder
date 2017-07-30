@@ -23,9 +23,9 @@
 
         constructor () {
           super()
-          if (performance) {
-            console.log('App shell constructor called: ' + (performance.now() - window.globalStart))
-          }
+          // if (performance) {
+          //   console.log('App shell constructor called: ' + (performance.now() - window.globalStart))
+          // }
           Object.defineProperty(this, '__routes', { value: JSON.parse(window.Project.__routes) })
           Object.freeze(this.__routes)
         }
