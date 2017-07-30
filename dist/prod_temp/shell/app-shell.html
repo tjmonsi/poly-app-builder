@@ -1,6 +1,7 @@
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
 <link rel="import" href="../modules/app-router/app-router.html">
+<link rel="import" href="../modules/app-network-status/app-network-status.html">
 <link rel="import" href="../opts/auth-functions.html">
 <link rel="import" href="../opts/firebase.html">
 
@@ -12,13 +13,11 @@
   </template>
   <script>
     (() => {
-      class AppShell extends ((typeof window.Project.Mixins.Permissions === 'function') ? window.Project.Mixins.Permissions(Polymer.Element) : Polymer.Element) {
+      class AppShell extends ((typeof window.Project.Mixins.Permissions === 'function') ? window.Project.Mixins.Permissions(window.Project.Mixins.AppNetworkStatus(Polymer.Element)) : window.Project.Mixins.AppNetworkStatus(Polymer.Element)) {
         static get is () { return 'app-shell' }
 
         static get properties () {
-          return Object.assign({}, super.properties, {
-
-          })
+          return Project.__utils.__extends({}, super.properties, {})
         }
 
         constructor () {
