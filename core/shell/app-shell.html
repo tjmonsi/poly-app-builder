@@ -26,14 +26,16 @@
           //   console.log('App shell constructor called: ' + (performance.now() - window.globalStart))
           // }
           Object.defineProperty(this, '__routes', { value: JSON.parse(window.Project.__routes) })
+          Object.defineProperty(this, '__shellComponents', { value: JSON.parse(window.Project.__shellComponents) })
           Object.freeze(this.__routes)
+          Object.freeze(this.__shellComponents)
         }
 
         connectedCallback () {
           super.connectedCallback()
-          var routes = this.__routes
           const router = this.shadowRoot.querySelector('app-router')
-          this.__setRoutes(router, routes)
+          this.__setRoutes(router, this.__routes)
+          this.__setComponents(router, this.__shellComponents)
         }
 
         __setRoutes (router, routes, parentRoute, auth) {
@@ -53,6 +55,24 @@
             if (routes[i].subroutes) {
               this.__setRoutes(router, routes[i].subroutes, route, auth)
             }
+          }
+        }
+
+        __setComponents (content, components) {
+          var componentsArray = []
+          for (var i in components) {
+            componentsArray.push(Project.__utils.__extends({}, components[i], { node: i }))
+          }
+          componentsArray.sort((p, q) => (p['.order'] - q['.order']))
+          for (var j in componentsArray) {
+            var node = document.createElement(componentsArray[j].node)
+            for (var k in componentsArray[j]) {
+              if (k !== 'node' && k !== '.order') {
+                var attr = k === 'className' ? 'class' : k
+                node.setAttribute(attr, componentsArray[j][k])
+              }
+            }
+            content.parentNode.insertBefore(node, content)
           }
         }
       }

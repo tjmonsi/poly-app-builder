@@ -8,6 +8,9 @@ gulp.task('compile-index', () => {
     helpers: {
       compileRouting: (options) => {
         return JSON.stringify(Object.assign({}, options.data.global.routing, options.data.global.httpCodes))
+      },
+      compileShellComponents: (options) => {
+        return JSON.stringify(Object.assign({}, options.data.global.shellComponents))
       }
     }
   })

@@ -61,6 +61,7 @@
 
       // set config variables
       Object.defineProperty(Project, '__routes', { value: '{{#compileRouting}}{{/compileRouting}}' })
+      Object.defineProperty(Project, '__shellComponents', { value: '{{#compileShellComponents}}{{/compileShellComponents}}' })
 
       if (performance) {
         window.globalStart = performance.now()
