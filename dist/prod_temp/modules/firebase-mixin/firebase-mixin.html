@@ -1,7 +1,33 @@
 <link rel="import" href="pouchdb.html">
+<link rel="import" href="../../bower_components/polymer/lib/utils/async.html">
 
 <script>
   (() => {
+    const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
+
+    const propertyListeners = (element, name, path, property) => {
+      element.__paths[name] = Project.__utils.__extends({}, property, { path })
+      var attrs = path.match(pathMatch)
+      var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
+      var args2 = args.map(arg => element.get(arg))
+      var methodName = `__updatePropertyData("${name}", ${args.join(', ')})`
+      element._createMethodObserver(methodName)
+      element.__updatePropertyData(name, ...args2)
+    }
+
+    const update = (element, bindings, properties) => {
+      bindings.forEach(name => {
+        var { path, auth } = properties[name]
+        var paths = new window.PouchDB('paths', {auto_compaction: true})
+        paths.upsert(path, (doc) => {
+          doc.path = path
+          doc.auth = auth
+          return doc
+        })
+        propertyListeners(element, name, path, properties[name])
+      })
+    }
+
     const bind = (element, properties, startTime) => {
       var bindings = Object.keys(properties)
         .filter((name) => {
@@ -12,501 +38,7 @@
           return false
         })
 
-      const onError = (err) => {
-        console.error(err)
-      }
-
-      const setValue = (name, value, readOnly) => {
-        if (readOnly) {
-          element._setProperty(name, value)
-        } else {
-          element[name] = value
-        }
-      }
-
-      const updateLocalDB = (property, data, del) => {
-        const { path, child } = property
-        var db = new window.PouchDB(path, {auto_compaction: true})
-        if (child) {
-          db.createIndex({
-            index: {
-              fields: [child]
-            }
-          })
-        }
-        if (!del) {
-          for (var i in data) {
-            db.upsert(i, (doc) => {
-              doc.$key = doc._id
-              typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id]
-              return doc
-            })
-          }
-        } else {
-          for (var j in data) {
-            db.get(j).then((doc) => (db.remove(doc)))
-          }
-        }
-      }
-
-      const getLocalDB = (property, name) => {
-        const {
-          path,
-          readOnly,
-          type,
-          startAt,
-          endAt,
-          equalTo,
-          // limitToLast,
-          // limitToFirst,
-          orderBy,
-          child,
-          desc
-        } = property
-        const db = new window.PouchDB(path, {auto_compaction: true})
-
-        const find = {}
-
-        if (orderBy === 'child' && child) {
-          find.sort = [child]
-        } else if (orderBy === 'value') {
-          find.sort = ['value']
-        } else {
-          find.sort = ['_id']
-        }
-
-        find.selector = {}
-        find.selector[find.sort[0]] = {}
-
-        if (startAt) {
-          find.selector[find.sort[0]] = {
-            $gte: startAt
-          }
-        }
-
-        if (endAt) {
-          find.selector[find.sort[0]] = Project.__extends({}, find.selector[find.sort[0]], {
-            $lte: endAt
-          })
-        }
-
-        if (equalTo) {
-          find.selector[find.sort[0]] = {
-            $eq: equalTo
-          }
-        }
-
-        if ((startAt === undefined || startAt === null) && (endAt === undefined || endAt === null) && (equalTo === undefined || equalTo === null)) {
-          find.selector[find.sort[0]] = {
-            $gt: null
-          }
-        }
-
-        if (desc) {
-          var descObj = {}
-          descObj[find.sort[0]] = 'desc'
-          find.sort = [descObj]
-        }
-        console.log(find)
-        // find.sort = null
-
-        db.find(find).then((result) => {
-          var data
-          if (type === Array) {
-            data = []
-            for (var i in result.docs) {
-              data.push(result.docs[i])
-            }
-            if (orderBy === 'child' && child) {
-              data.sort((p, q) => {
-                return desc ? q[child] - p[child] : p[child] - q[child]
-              })
-            } else if (orderBy === 'key') {
-              data.sort((p, q) => {
-                return desc ? p.$key - q.$key : q.$key - p.$key
-              })
-            } else if (orderBy === 'value') {
-              data.sort((p, q) => {
-                return desc ? p.value - q.value : q.value - p.value
-              })
-            }
-          } else {
-            data = {}
-            for (var j in result.docs) {
-              data[j] = result.docs[i].val
-            }
-          }
-          console.log(data)
-          setValue(name, data, readOnly)
-        }).catch((err) => {
-          console.error(err)
-        })
-      }
-
-      // const updateLocal = (path, data, type, db) => {
-      //   db.upsert(path, (doc) => {
-      //     type === Array ? doc.array = data : doc.obj = data
-      //     return doc
-      //   })
-      // }
-
-      // const getLocal = (path, name, type, db, readOnly) => {
-      //   db.get(path)
-      //     .then((doc) => {
-      //       if (type === Array) {
-      //         setValue(name, doc.array, readOnly)
-      //       } else {
-      //         setValue(name, doc.obj, readOnly)
-      //       }
-      //     })
-      //     .catch((err) => {
-      //       if (err.name !== 'not_found') {
-      //         console.log(err)
-      //       }
-      //     })
-      // }
-
-      const getFirebase = (property, name, db) => {
-        const {
-          path,
-          readOnly,
-          readOnce,
-          type,
-          startAt,
-          startAtKey,
-          endAt,
-          endAtKey,
-          equalTo,
-          equalToKey,
-          limitToLast,
-          limitToFirst,
-          orderBy,
-          child,
-          desc
-        } = property
-
-        const indexFromKey = (data, key) => {
-          if (key != null) {
-            for (var i = 0; i < data.length; i++) {
-              if (data[i].$key === key) {
-                return i
-              }
-            }
-          }
-          return -1
-        }
-
-        const valueWithKey = (key, value) => {
-          var leaf = typeof value !== 'object'
-          if (leaf) {
-            value = {$key: key, $val: value}
-          } else {
-            value.$key = key
-          }
-          return value
-        }
-
-        const snapshotToValue = (snapshot) => {
-          var key = snapshot.key
-          var value = snapshot.val()
-          return valueWithKey(key, value)
-        }
-
-        const onFirebaseValue = (snapshot) => {
-          if (type === Array) {
-            var data = []
-            if (snapshot.hasChildren()) {
-              snapshot.forEach((childSnapshot) => {
-                var key = childSnapshot.key
-                var value = valueWithKey(key, childSnapshot.val())
-                element.__refs[path].__map[key] = value
-                data.push(value)
-              })
-            }
-
-            if (desc) {
-              data.reverse()
-            }
-            // if (performance) {
-            //   console.log('Data loaded from Firebase SDK: ' + (performance.now() - window.globalStart))
-            // }
-            setValue(name, data, readOnly)
-            element.__refs[path].__initialLoadDone = true
-          } else {
-            setValue(name, snapshot.val(), readOnly)
-          }
-
-          updateLocalDB(property, snapshot.val())
-          // updateLocal(path, element[name], type, db)
-        }
-
-        const onFirebaseChildAdded = (snapshot, previousChildKey) => {
-          var key = snapshot.key
-
-          if (element.__refs[path].__initialLoadDone) {
-            var value = snapshot.val()
-            var previousChildIndex = indexFromKey(element[name], previousChildKey)
-            value = snapshotToValue(snapshot)
-            element.__refs[path].__map[key] = value
-            if (desc) {
-              element.splice(name, previousChildIndex - 1, 0, value)
-            } else {
-              element.splice(name, previousChildIndex + 1, 0, value)
-            }
-          }
-
-          var obj = {}
-          obj[snapshot.key] = snapshot.val()
-
-          updateLocalDB(property, obj)
-          // updateLocal(path, element[name], type, db)
-        }
-
-        const onFirebaseChildRemoved = (snapshot) => {
-          var key = snapshot.key
-          var value = element.__refs[path].__map[key]
-          if (value) {
-            element.__refs[path].__map[key] = null
-            element.splice(name, indexFromKey(key), 1)
-          }
-
-          var obj = {}
-          obj[snapshot.key] = snapshot.val()
-
-          updateLocalDB(property, obj, true)
-          // updateLocal(path, element[name], type, db)
-        }
-
-        const onFirebaseChildChanged = (snapshot) => {
-          var key = snapshot.key
-          var prev = element.__refs[path].__map[key]
-
-          if (prev) {
-            var index = indexFromKey(key)
-            var value = snapshotToValue(snapshot)
-            element.__refs[path].__map[key] = value
-
-            if (value instanceof Object) {
-              for (var p1 in value) {
-                element.set([name, index, p1], value[p1])
-              }
-              for (var p2 in prev) {
-                if (!value.hasOwnProperty(p2)) {
-                  element.set([name, index, p2], null)
-                }
-              }
-            } else {
-              element.set([name, index], value)
-            }
-          }
-          var obj = {}
-          obj[snapshot.key] = snapshot.val()
-
-          updateLocalDB(property, obj)
-          // updateLocal(path, element[name], type, db)
-        }
-
-        const onFirebaseChildMoved = (snapshot, previousChildKey) => {
-          var key = snapshot.key
-          var value = element.__refs[path].__map[key]
-          var targetIndex = previousChildKey ? indexFromKey(previousChildKey) + 1 : 0
-
-          if (value) {
-            var index = indexFromKey(key)
-            value = snapshotToValue(snapshot)
-            element.__refs[path].__map[key] = value
-            element.splice(name, index, 1)
-            element.splice(name, targetIndex, 0, value)
-            // updateLocal(path, element[name], type, db)
-
-            var obj = {}
-            obj[snapshot.key] = snapshot.val()
-
-            updateLocalDB(property, obj)
-          }
-        }
-
-        // getLocal(path, name, type, db, readOnly)
-
-        var ref = firebase.database().ref(path)
-        var on = readOnce ? 'once' : 'on'
-        ref = startAt ? ref.startAt(startAt, startAtKey) : ref
-        ref = endAt ? ref.endAt(endAt, endAtKey) : ref
-        ref = equalTo ? ref.equalTo(equalTo, equalToKey) : ref
-
-        if (limitToFirst) {
-          ref = ref.limitToFirst(limitToFirst)
-        } else if (limitToLast) {
-          ref = ref.limitToLast(limitToLast)
-        }
-
-        if (orderBy && ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)] && ((child && orderBy === 'child') || (orderBy !== 'child'))) {
-          ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)](child)
-        }
-
-        // if (performance) {
-        //   console.log('Started listening from Firebase using SDK: ' + (performance.now() - window.globalStart))
-        // }
-
-        if (type === Array) {
-          element.__refs[path] = element.__refs[path] || {
-            __onOnce: false,
-            __initialLoadDone: false,
-            __map: {},
-            functions: {
-              'onFirebaseValue': onFirebaseValue,
-              'onFirebaseChildAdded': onFirebaseChildAdded,
-              'onFirebaseChildRemoved': onFirebaseChildRemoved,
-              'onFirebaseChildChanged': onFirebaseChildChanged,
-              'onFirebaseChildMoved': onFirebaseChildMoved
-            }
-          }
-
-          element.__refs[path].ref = element.__refs[path].ref || ref
-
-          if (element.__refs[path].ref) {
-            element.__refs[path].__onOnce = true
-            element.__refs[path].__initialLoadDone = false
-
-            element.__refs[path].ref[on]('value', element.__refs[path].functions.onFirebaseValue, onError)
-            if (!readOnce) {
-              element.__refs[path].ref[on]('child_added', element.__refs[path].functions.onFirebaseChildAdded, onError)
-              element.__refs[path].ref[on]('child_removed', element.__refs[path].functions.onFirebaseChildRemoved, onError)
-              element.__refs[path].ref[on]('child_changed', element.__refs[path].functions.onFirebaseChildChanged, onError)
-              element.__refs[path].ref[on]('child_moved', element.__refs[path].functions.onFirebaseChildMoved, onError)
-            }
-          }
-        } else {
-          element.__refs[path].ref[on]('value', element.__refs[path].functions.onFirebaseValue, onError)
-        }
-      }
-
-      const getFirebaseAPI = (property, name, db) => {
-        const {
-          path,
-          readOnly,
-          type,
-          startAt,
-          endAt,
-          equalTo,
-          limitToLast,
-          limitToFirst,
-          orderBy,
-          child
-        } = property
-
-        const queryParams = []
-
-        var ref = `https://${Project.__firebaseConfig.projectId}.firebaseio.com/${path}.json?`
-        if (startAt) queryParams.push(`startAt=${encodeURI(startAt)}`)
-        if (endAt) queryParams.push(`endAt=${encodeURI(endAt)}`)
-        if (equalTo) queryParams.push(`equalTo=${encodeURI(equalTo)}`)
-        if (limitToLast) queryParams.push(`limitToLast=${encodeURI(limitToLast)}`)
-        else if (limitToFirst) queryParams.push(`limitToFirst=${encodeURI(limitToFirst)}`)
-        if (child) queryParams.push(`orderBy="${encodeURI(child)}"`)
-        else if (orderBy) queryParams.push(`orderBy=$${encodeURI(orderBy)}`)
-
-        ref = ref + queryParams.join('&')
-        var flag = true
-
-        // if (performance) {
-        //   console.log('Loaded the data from localDB (pouchDB): ' + (performance.now() - window.globalStart))
-        // }
-        // getLocal(path, name, type, db, readOnly)
-
-        if (Project.__firebaseFetch[ref]) {
-          var fetcher = Project.__firebaseFetch[ref]
-          if (new Date() - fetcher.time <= 10) {
-            flag = false
-            setValue(name, fetcher.value, readOnly)
-          }
-        }
-
-        if (flag) {
-          Project.__firebaseFetch[ref] = {
-            time: new Date()
-          }
-          // if (performance) {
-          //   console.log('Started fetching using Firebase REST: ' + (performance.now() - window.globalStart))
-          // }
-          fetch(ref)
-            .then((response) => {
-              // if (performance) {
-              //   console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
-              // }
-              return response.json()
-            })
-            .then((json) => {
-              updateLocalDB(property, json)
-              if (type === Array) {
-                var data = []
-                for (var i in json) {
-                  var obj = json[i]
-                  obj.$key = i
-                  data.push(obj)
-                }
-                if (child) {
-                  data.sort((p, q) => {
-                    return p[child] - q[child]
-                  })
-                }
-                Project.__firebaseFetch[ref].value = data
-                setValue(name, data, readOnly)
-                // updateLocal(path, data, type, db)
-              } else {
-                Project.__firebaseFetch[ref].value = json
-                setValue(name, json, readOnly)
-                // updateLocal(path, json, type, db)
-              }
-              return Promise.resolve()
-            })
-
-
-          if (!window.firebase) {
-            // if (performance) {
-            //   console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
-            // }
-            const src = 'https://www.gstatic.com/firebasejs/4.1.4/firebase.js'
-            var script = document.createElement('script')
-            var t = document.getElementsByTagName('script')[0]
-            script.type = 'text/javascript'
-            script.id = 'firebase-script'
-            script.src = src
-            script.onload = script.onreadstatechange = () => {
-              firebase.initializeApp(Project.__firebaseConfig)
-              // if (performance) {
-              //   console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
-              // }
-              getFirebase(property, name, db)
-            }
-            if (!document.head.querySelector(`#firebase-script`)) {
-              t.parentNode.insertBefore(script, t)
-            }
-          }
-        }
-      }
-
-      const update = () => {
-        bindings.forEach(name => {
-          var { path, auth } = properties[name]
-          var paths = new window.PouchDB('paths', {auto_compaction: true})
-          paths.upsert(path, (doc) => {
-            doc.path = path
-            doc.auth = auth
-            return doc
-          })
-
-          getLocalDB(properties[name], name)
-
-          if (window.firebase) {
-            getFirebase(properties[name], name)
-          } else {
-            getFirebaseAPI(properties[name], name)
-          }
-        })
-      }
-
-      return update()
+      return update(element, bindings, properties)
     }
 
     const unbind = (element) => {
@@ -547,6 +79,7 @@
         constructor () {
           super()
           Object.defineProperty(this, '__refs', { value: {} })
+          Object.defineProperty(this, '__paths', { value: {} })
         }
 
         connectedCallback () {
@@ -562,6 +95,609 @@
         disconnectedCallback () {
           super.disconnectedCallback()
           unbind(this)
+        }
+
+        updatePropertyPath (name, newPath) {
+          const { path, paginated, readOnly } = this.__paths[name]
+          if (paginated) {
+            this.__setValue(name, [], readOnly)
+          }
+          var attrs = path.match(pathMatch)
+          var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
+          for (var i in args) {
+            var effects = this.__observeEffects[args[i].split(/\./g)[0]]
+            var index = null
+            for (var j in effects) {
+              if (effects[j].info.args[0].value === name) {
+                index = j
+                break
+              }
+            }
+            if (index !== null) {
+              effects.splice(index, 1)
+            }
+          }
+          propertyListeners(this, name, newPath, this.__paths[name])
+        }
+
+        updateQuery (name, query) {
+          var path = this.__paths[name].path
+          var obj = {}
+          if (query.equalTo != null) {
+            obj.startAt = null
+            obj.endAt = null
+          } else if (query.startAt != null || query.endAt != null) {
+            obj.equalTo = null
+          }
+
+          if (query.limitToLast != null) {
+            obj.limitToFirst = null
+          } else if (query.limitToFirst != null) {
+            obj.limitToLast = null
+          }
+
+          this.__paths[name] = Project.__utils.__extends({}, this.__paths[name], obj, query, { path })
+          propertyListeners(this, name, this.__paths[name].path, this.__paths[name])
+        }
+
+        __updatePropertyData (name, ...args) {
+          const property = this.__paths[name]
+          const { path } = property
+          if (typeof path === 'string') {
+            var newPath = path
+            var pathArray = path.match(pathMatch)
+            while (pathArray.length > 0) {
+              newPath = newPath.replace(pathArray.shift(), args.shift())
+            }
+
+            // load data from localDB
+            this.__getLocalDB(name, property, newPath)
+
+            if (window.firebase) {
+              this.__fetchDataViaFirebase(name, newPath, property)
+            } else {
+              this.__fetchDataViaRest(name, newPath, property)
+            }
+          }
+        }
+
+        __setValue (name, value, readOnly) {
+          if (readOnly) {
+            this._setProperty(name, value)
+          } else {
+            this.set(name, value)
+          }
+        }
+
+        __fetchDataViaFirebase (name, path, property) {
+          const {
+            readOnce,
+            type,
+            startAt,
+            startAtKey,
+            endAt,
+            endAtKey,
+            equalTo,
+            equalToKey,
+            limitToLast,
+            limitToFirst,
+            orderBy,
+            child,
+            paginated
+          } = property
+
+          const onFirebaseValue = (snapshot) => {
+            this.__onFirebaseValue(snapshot, name, property, path)
+          }
+
+          const onFirebaseChildAdded = (snapshot, previousChildKey) => {
+            this.__onFirebaseChildAdded(snapshot, previousChildKey, name, property, path)
+          }
+
+          const onFirebaseChildChanged = (snapshot) => {
+            this.__onFirebaseChildChanged(snapshot, name, property, path)
+          }
+
+          const onFirebaseChildMoved = (snapshot, previousChildKey) => {
+            this.__onFirebaseChildMoved(snapshot, previousChildKey, name, property)
+          }
+
+          const onFirebaseChildRemoved = (snapshot) => {
+            this.__onFirebaseChildRemoved(snapshot, name, property, path)
+          }
+
+          var ref = firebase.database().ref(path)
+          var on = readOnce || paginated ? 'once' : 'on'
+          if (equalTo) {
+            ref = ref.equalTo(equalTo, equalToKey)
+          } else {
+            ref = startAt ? ref.startAt(startAt, startAtKey) : ref
+            ref = endAt ? ref.endAt(endAt, endAtKey) : ref
+          }
+
+          if (limitToFirst) {
+            ref = ref.limitToFirst(limitToFirst)
+          } else if (limitToLast) {
+            ref = ref.limitToLast(limitToLast)
+          }
+
+          if (orderBy && ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)] && ((child && orderBy === 'child') || (orderBy !== 'child'))) {
+            if (orderBy === 'child') {
+              ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)](child)
+            } else {
+              ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)]()
+            }
+          }
+
+          if (type === Array) {
+            this.__refs[name] = this.__refs[name] || {
+              __onOnce: false,
+              __initialLoadDone: false,
+              __map: {},
+              __data: []
+            }
+
+            if (this.__refs[name] && this.__refs[name].ref) {
+              this.__refs[name].ref.off()
+            }
+
+            // Have to wrap this in async so that the off from the previous run takes effect
+            Polymer.Async.microTask.run(() => {
+              this.__refs[name].ref = ref
+              if (this.__refs[name].ref) {
+                this.__refs[name].__onOnce = true
+                this.__refs[name].__initialLoadDone = false
+                this.__refs[name].ref[on]('value', onFirebaseValue, this.__onError, this)
+                if (!(readOnce || paginated)) {
+                  this.__refs[name].ref[on]('child_added', onFirebaseChildAdded, this.__onError, this)
+                  this.__refs[name].ref[on]('child_removed', onFirebaseChildRemoved, this.__onError, this)
+                  this.__refs[name].ref[on]('child_changed', onFirebaseChildChanged, this.__onError, this)
+                  this.__refs[name].ref[on]('child_moved', onFirebaseChildMoved, this.__onError, this)
+                }
+              }
+            })
+          } else {
+            this.__refs[name].ref[on]('value', this.__refs[path].functions.onFirebaseValue, this.__onError, this)
+          }
+        }
+
+        __fetchDataViaRest (name, path, property) {
+          const {
+            readOnly,
+            type,
+            startAt,
+            endAt,
+            equalTo,
+            limitToLast,
+            limitToFirst,
+            orderBy,
+            child,
+            desc,
+            paginated
+          } = property
+
+          const queryParams = []
+
+          var ref = `https://${Project.__firebaseConfig.projectId}.firebaseio.com/${path}.json?`
+          if (equalTo) {
+            queryParams.push(`equalTo=${encodeURI(equalTo)}`)
+          } else {
+            if (startAt) queryParams.push(`startAt=${encodeURI(startAt)}`)
+            if (endAt) queryParams.push(`endAt=${encodeURI(endAt)}`)
+          }
+          if (limitToLast) queryParams.push(`limitToLast=${encodeURI(limitToLast)}`)
+          else if (limitToFirst) queryParams.push(`limitToFirst=${encodeURI(limitToFirst)}`)
+          if (child && orderBy === 'child') queryParams.push(`orderBy="${encodeURI(child)}"`)
+          else if (orderBy) queryParams.push(`orderBy="$${encodeURI(orderBy)}"`)
+
+          ref = ref + queryParams.join('&')
+          var flag = true
+
+          if (Project.__firebaseFetch[ref]) {
+            var fetcher = Project.__firebaseFetch[ref]
+            if (new Date() - fetcher.time <= 10) {
+              flag = false
+              this.__setValue(name, fetcher.value, readOnly)
+            }
+          }
+
+          if (flag) {
+            Project.__firebaseFetch[ref] = {
+              time: new Date()
+            }
+
+            fetch(ref)
+              .then((response) => {
+                // if (performance) {
+                //   console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
+                // }
+                return response.json()
+              })
+              .then((json) => {
+              // updateLocalDB(property, json)
+                if (json.error) {
+                  return console.log(json.error)
+                }
+                if (type === Array) {
+                  var data = paginated ? (this[name] || []) : []
+                  for (var i in json) {
+                    var obj = json[i]
+                    obj.$key = i
+                    var flag = true
+                    for (var j in data) {
+                      if (data[j].$key === i) {
+                        flag = false
+                        break
+                      }
+                    }
+                    if (flag) {
+                      data.push(obj)
+                    }
+                  }
+
+                  data = this.__sortData(data, orderBy, child)
+
+                  if (desc) {
+                    data.reverse()
+                  }
+                  Project.__firebaseFetch[ref].value = data
+                  this.__setValue(name, data, readOnly)
+                } else {
+                  Project.__firebaseFetch[ref].value = json
+                  this.__setValue(name, json, readOnly)
+                }
+                return Promise.resolve()
+              })
+              .catch((err) => {
+                console.error(err)
+              })
+          }
+
+          if (!window.firebase) {
+            // if (performance) {
+            //   console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
+            // }
+            const src = `https://www.gstatic.com/firebasejs/${Project.__firebaseVersion || '4.1.4'}/firebase.js`
+            var script = document.createElement('script')
+            var t = document.getElementsByTagName('script')[0]
+            script.type = 'text/javascript'
+            script.id = 'firebase-script'
+            script.src = src
+            script.onload = script.onreadstatechange = () => {
+              firebase.initializeApp(Project.__firebaseConfig)
+              // if (performance) {
+              //   console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
+              // }
+              this.__fetchDataViaFirebase(name, path, property)
+            }
+            if (!document.head.querySelector(`#firebase-script`)) {
+              t.parentNode.insertBefore(script, t)
+            }
+          }
+        }
+
+        __indexFromKey (data, key) {
+          if (key != null) {
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].$key === key) {
+                return i
+              }
+            }
+          }
+          return -1
+        }
+
+        __valueWithKey (key, value) {
+          var leaf = typeof value !== 'object'
+          if (leaf) {
+            value = {$key: key, $val: value}
+          } else {
+            value.$key = key
+          }
+          return value
+        }
+
+        __snapshotToValue (snapshot) {
+          var key = snapshot.key
+          var value = snapshot.val()
+          return this.__valueWithKey(key, value)
+        }
+
+        __onFirebaseValue (snapshot, name, property, path) {
+          const { type, desc, paginated, readOnly, child, orderBy } = property
+          if (type === Array) {
+            var data = paginated ? this[name] || [] : []
+            if (snapshot.hasChildren()) {
+              snapshot.forEach((childSnapshot) => {
+                var key = childSnapshot.key
+                var value = this.__valueWithKey(key, childSnapshot.val())
+                this.__refs[name].__map[key] = value
+
+                var obj = {}
+                obj[key] = value
+                this.__updateLocalDB(property, obj, path)
+
+                if (paginated) {
+                  var flag = true
+                  for (var i in data) {
+                    if (data[i].$key === key) {
+                      flag = false
+                      break
+                    }
+                  }
+                  if (flag) {
+                    data.push(value)
+                  }
+                } else {
+                  data.push(value)
+                }
+              })
+            }
+
+            if (paginated) {
+              data = this.__sortData(data, orderBy, child)
+            }
+            if (desc) {
+              data.reverse()
+            }
+            this.__setValue(name, data, readOnly)
+            this.notifySplices(name)
+
+            this.__refs[name].__initialLoadDone = true
+            this.__refs[name].ref.off('value')
+          } else {
+            this.__setValue(name, snapshot.val(), readOnly)
+          }
+        }
+
+        __onFirebaseChildAdded (snapshot, previousChildKey, name, property, path) {
+          const { desc } = property
+          var key = snapshot.key
+          if (this.__refs[name].__initialLoadDone) {
+            var value = snapshot.val()
+            var previousChildIndex = this.__indexFromKey(this[name], previousChildKey)
+            value = this.__snapshotToValue(snapshot)
+            this.__refs[name].__map[key] = value
+            if (desc) {
+              this.splice(name, previousChildIndex < 0 ? this[name].length : previousChildIndex, 0, value)
+            } else {
+              this.splice(name, previousChildIndex + 1, 0, value)
+            }
+          }
+
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
+          this.__updateLocalDB(property, obj, path)
+        }
+
+        __onFirebaseChildRemoved (snapshot, name, property, path) {
+          var key = snapshot.key
+          var value = this.__refs[name].__map[key]
+          if (value) {
+            this.__refs[name].__map[key] = null
+            this.splice(name, this.__indexFromKey(this[name], key), 1)
+          }
+
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
+          this.__updateLocalDB(property, obj, path, true)
+        }
+
+        __onFirebaseChildChanged (snapshot, name, property, path) {
+          var key = snapshot.key
+          var prev = this.__refs[name].__map[key]
+
+          if (prev) {
+            var index = this.__indexFromKey(this[name], key)
+            var value = this.__snapshotToValue(snapshot)
+            this.__refs[name].__map[key] = value
+
+            if (value instanceof Object) {
+              for (var p1 in value) {
+                this.set([name, index, p1], value[p1])
+              }
+              for (var p2 in prev) {
+                if (!value.hasOwnProperty(p2)) {
+                  this.set([name, index, p2], null)
+                }
+              }
+            } else {
+              this.set([name, index], value)
+            }
+          }
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
+          this.__updateLocalDB(property, obj, path)
+        }
+
+        __onFirebaseChildMoved (snapshot, previousChildKey, name, property) {
+          const { desc } = property
+          var key = snapshot.key
+          var value = this.__refs[name].__map[key]
+          var targetIndex
+          if (value) {
+            var index = this.__indexFromKey(this[name], key)
+            value = this.__snapshotToValue(snapshot)
+            this.__refs[name].__map[key] = value
+            this.splice(name, index, 1)
+
+            targetIndex = previousChildKey ? this.__indexFromKey(this[name], previousChildKey) + 1 : 0
+
+            if (desc) {
+              this.splice(name, targetIndex - 1 < 0 ? this[name].length : targetIndex - 1, 0, value)
+            } else {
+              this.splice(name, targetIndex, 0, value)
+            }
+          }
+        }
+
+        __onError (err) {
+          console.log(err)
+        }
+
+        __getLocalDB (name, property, path) {
+          const {
+            readOnly,
+            type,
+            startAt,
+            endAt,
+            equalTo,
+            limitToLast,
+            limitToFirst,
+            orderBy,
+            child,
+            desc
+          } = property
+          const db = new window.PouchDB(path, {auto_compaction: true})
+
+          const find = {}
+
+          // if (child) {
+          //   db.createIndex({
+          //     index: {
+          //       fields: [child]
+          //     }
+          //   }).then((result) => {
+          //     console.log(result)
+          //   })
+          // }
+
+          if (orderBy === 'child' && child) {
+            find.sort = [child]
+          } else if (orderBy === 'value') {
+            find.sort = ['value']
+          } else {
+            find.sort = ['_id']
+          }
+
+          find.selector = {}
+          find.selector[find.sort[0]] = {}
+
+          if (startAt) {
+            find.selector[find.sort[0]] = {
+              $gte: startAt
+            }
+          }
+
+          if (endAt) {
+            find.selector[find.sort[0]] = Project.__extends({}, find.selector[find.sort[0]], {
+              $lte: endAt
+            })
+          }
+
+          if (equalTo) {
+            find.selector[find.sort[0]] = {
+              $eq: equalTo
+            }
+          }
+
+          if ((startAt === undefined || startAt === null) && (endAt === undefined || endAt === null) && (equalTo === undefined || equalTo === null)) {
+            find.selector[find.sort[0]] = {
+              $gt: null
+            }
+          }
+
+          if (desc) {
+            var descObj = {}
+            descObj[find.sort[0]] = 'desc'
+            find.sort = [descObj]
+          }
+          console.log(find)
+          // find.sort = null
+
+          db.find(find).then((result) => {
+            var data
+            if (type === Array) {
+              data = []
+              for (var i in result.docs) {
+                data.push(result.docs[i])
+              }
+              data = this.__sortData(data, orderBy, child)
+            } else {
+              data = {}
+              for (var j in result.docs) {
+                data[j] = result.docs[i].val
+              }
+            }
+
+            if (limitToFirst) {
+              var firstLength = data.length - limitToFirst
+              for (var k = 0; k < firstLength; k++) {
+                data.pop()
+              }
+            } else if (limitToLast) {
+              var lastLength = data.length - limitToLast
+              for (var l = 0; l < lastLength; l++) {
+                data.shift()
+              }
+            }
+
+            if (desc) {
+              data.reverse()
+            }
+
+
+
+            this.__setValue(name, data, readOnly)
+          }).catch((err) => {
+            console.error(err)
+            return db.allDocs()
+          }).then((result) => {
+            if (result) {
+              console.log(result)
+            }
+            // console.log(result)
+          })
+        }
+
+        __updateLocalDB (property, data, path, del) {
+          const { child } = property
+          var db = new window.PouchDB(path, {auto_compaction: true})
+          if (child) {
+            db.createIndex({
+              index: {
+                fields: [child]
+              }
+            })
+          }
+          if (!del) {
+            for (var i in data) {
+              db.upsert(i, (doc) => {
+                doc.$key = doc._id
+                typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id]
+                return doc
+              })
+            }
+          } else {
+            for (var j in data) {
+              db.get(j).then((doc) => (db.remove(doc)))
+            }
+          }
+        }
+
+        __sortData (data, orderBy, child) {
+          data.sort((item1, item2) => {
+            var newChild = child && orderBy === 'child' ? child : '$key'
+            if (orderBy === 'child' || orderBy === 'key') {
+              if (item1[newChild] < item2[newChild]) {
+                return -1
+              }
+              if (item1[newChild] > item2[newChild]) {
+                return 1
+              }
+              return 0
+            } else {
+              if (item1 < item2) {
+                return -1
+              }
+              if (item1 > item2) {
+                return 1
+              }
+              return 0
+            }
+          })
+
+          return data
         }
       }
     }

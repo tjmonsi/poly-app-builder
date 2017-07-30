@@ -5,7 +5,8 @@
     "description": "Polyblog App System Description",
     "baseHref": "/",
     "analytics": "UA-103026201-1",
-    "firebaseVersion": "4.1.4"
+    "firebaseVersion": "4.1.4",
+    "firebaseId": "tjkpm-site-yng"
   },
   "modules": {
     "app-router": true,
