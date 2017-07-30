@@ -15,7 +15,8 @@
     "not-authorized-page": true,
     "not-found-page": true,
     "home-page": true,
-    "default-theme": true
+    "default-theme": true,
+    "page-two": true
   },
   "theme": {
     "src": "core/modules/default-theme",
@@ -24,13 +25,17 @@
   "fragments": {
     "home-page": "modules/home-page/pages/home-page.html",
     "not-found-page": "modules/not-found-page/pages/not-found-page.html",
-    "not-authorized-page": "modules/not-authorized-page/pages/not-authorized-page.html"
+    "not-authorized-page": "modules/not-authorized-pages/page/not-authorized-page.html",
+    "page-one-page": "modules/page-one/pages/page-one-page.html",
+    "page-two-page": "modules/page-two/pages/page-two-page.html"
   },
   "routing": {
     "/": {
       "node": "home-page"
     },
-    "/p": "home-page-2"
+    "/p/:id/:id2": "home-page-2",
+    "/test-modules-pages/page-one-page": "page-one-page",
+    "/test-modules-pages/page-two-page": "page-two-page"
   },
   "httpCodes": {
     "not-found": "not-found-page",
