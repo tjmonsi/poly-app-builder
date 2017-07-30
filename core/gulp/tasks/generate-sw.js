@@ -52,7 +52,7 @@ gulp.task('generate-sw', (done) => {
 
   fs.writeFileSync(
     `${destinationFolder()}/build/workbox-routing.v1.1.0.js`,
-    fs.readFileSync(`node_modules/workbox-routing/build/importScripts/workbox-routing.${buildName() === 'dev' ? 'prod' : 'dev'}.v1.1.0.js`,
+    fs.readFileSync(`node_modules/workbox-routing/build/importScripts/workbox-routing.${buildName() === 'prod' ? 'prod' : 'dev'}.v1.1.0.js`,
     'utf8'), 'utf8')
   fs.writeFileSync(
     `${destinationFolder()}/build/routing-sw.js`,

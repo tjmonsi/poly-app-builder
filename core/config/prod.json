@@ -22,9 +22,9 @@
     "ignoreComponents": []
   },
   "fragments": {
-    "home-page": "modules/home-page/page/home-page.html",
-    "not-found-page": "modules/not-found-page/page/not-found-page.html",
-    "not-authorized-page": "modules/not-authorized-page/page/not-authorized-page.html"
+    "home-page": "modules/home-page/pages/home-page.html",
+    "not-found-page": "modules/not-found-page/pages/not-found-page.html",
+    "not-authorized-page": "modules/not-authorized-page/pages/not-authorized-page.html"
   },
   "routing": {
     "/": {

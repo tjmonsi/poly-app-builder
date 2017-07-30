@@ -11,7 +11,8 @@ const tasks = [
   'compile-opts',
   'compile-modules-html',
   'generate-sw',
-  'polymer-build'
+  'polymer-build',
+  'browserify'
 ]
 
 const compilerTasks = []
@@ -21,6 +22,11 @@ const watchers = [
     name: 'watch-bower',
     files: sources.bower,
     tasks: 'copy-bower'
+  },
+  {
+    name: 'watch-browserify',
+    files: sources.browserify,
+    tasks: 'browserify'
   },
   {
     name: 'watch-index',
@@ -55,6 +61,9 @@ for (var i in tasks) {
     compilerTasks.push(tasks[i])
   }
 }
+
+require('./core/gulp/tasks/create-module')
+require('./core/gulp/tasks/create-page')
 
 setupWatchers(watchers)
 

@@ -5,7 +5,8 @@ const sources = {
   bower: 'bower_components/**/*.*',
   index: 'core/root/*.html',
   appShell: 'core/shell/app-shell.html',
-  opts: 'core/opts/*.html'
+  opts: 'core/opts/*.html',
+  browserify: ['core/tasks/utils/browser-essentials', 'core/scripts/*.js', 'core/scripts/**/*.js']
 }
 
 const getVersion = () => {

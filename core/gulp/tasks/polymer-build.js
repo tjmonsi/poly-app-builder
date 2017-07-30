@@ -27,6 +27,7 @@ gulp.task('polymer-build', () => {
     fragments,
     extraDependencies: [
       `manifest.json`,
+      `index.js`,
       `bower_components/webcomponentsjs/custom-elements-es5-adapter.js`,
       `bower_components/webcomponentsjs/webcomponents-hi-ce.js`,
       `bower_components/webcomponentsjs/webcomponents-hi-ce.js.map`,
