@@ -29,10 +29,10 @@
             test: {
               type: Array,
               path: '[[key]]/[[key2.val]]',
-              desc: true,
-              limitToLast: 3,
+              // desc: true,
+              limitToFirst: 3,
               orderBy: 'child',
-              child: 'value'
+              child: 'value',
               // paginated: true
             },
 

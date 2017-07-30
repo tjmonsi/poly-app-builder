@@ -38,145 +38,6 @@
           return false
         })
 
-      const onError = (err) => {
-        console.error(err)
-      }
-
-      const updateLocalDB = (property, data, del) => {
-        const { path, child } = property
-        var db = new window.PouchDB(path, {auto_compaction: true})
-        if (child) {
-          db.createIndex({
-            index: {
-              fields: [child]
-            }
-          })
-        }
-        if (!del) {
-          for (var i in data) {
-            db.upsert(i, (doc) => {
-              doc.$key = doc._id
-              typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id]
-              return doc
-            })
-          }
-        } else {
-          for (var j in data) {
-            db.get(j).then((doc) => (db.remove(doc)))
-          }
-        }
-      }
-
-      const getLocalDB = (property, name) => {
-        const {
-          path,
-          readOnly,
-          type,
-          startAt,
-          endAt,
-          equalTo,
-          // limitToLast,
-          // limitToFirst,
-          orderBy,
-          child,
-          desc
-        } = property
-        const db = new window.PouchDB(path, {auto_compaction: true})
-
-        const find = {}
-
-        // if (child) {
-        //   db.createIndex({
-        //     index: {
-        //       fields: [child]
-        //     }
-        //   }).then((result) => {
-        //     console.log(result)
-        //   })
-        // }
-
-        if (orderBy === 'child' && child) {
-          find.sort = [child]
-        } else if (orderBy === 'value') {
-          find.sort = ['value']
-        } else {
-          find.sort = ['_id']
-        }
-
-        find.selector = {}
-        find.selector[find.sort[0]] = {}
-
-        if (startAt) {
-          find.selector[find.sort[0]] = {
-            $gte: startAt
-          }
-        }
-
-        if (endAt) {
-          find.selector[find.sort[0]] = Project.__extends({}, find.selector[find.sort[0]], {
-            $lte: endAt
-          })
-        }
-
-        if (equalTo) {
-          find.selector[find.sort[0]] = {
-            $eq: equalTo
-          }
-        }
-
-        if ((startAt === undefined || startAt === null) && (endAt === undefined || endAt === null) && (equalTo === undefined || equalTo === null)) {
-          find.selector[find.sort[0]] = {
-            $gt: null
-          }
-        }
-
-        if (desc) {
-          var descObj = {}
-          descObj[find.sort[0]] = 'desc'
-          find.sort = [descObj]
-        }
-        console.log(find)
-        // find.sort = null
-
-        db.find(find).then((result) => {
-          var data
-          if (type === Array) {
-            data = []
-            for (var i in result.docs) {
-              data.push(result.docs[i])
-            }
-            if (orderBy === 'child' && child) {
-              data.sort((p, q) => {
-                return desc ? q[child] - p[child] : p[child] - q[child]
-              })
-            } else if (orderBy === 'key') {
-              data.sort((p, q) => {
-                return desc ? p.$key - q.$key : q.$key - p.$key
-              })
-            } else if (orderBy === 'value') {
-              data.sort((p, q) => {
-                return desc ? p.value - q.value : q.value - p.value
-              })
-            }
-          } else {
-            data = {}
-            for (var j in result.docs) {
-              data[j] = result.docs[i].val
-            }
-          }
-          console.log(data)
-          setValue(name, data, readOnly)
-        }).catch((err) => {
-          console.error(err)
-          return db.allDocs()
-        }).then((result) => {
-          if (result) {
-            console.log(result)
-          }
-          // console.log(result)
-        })
-      }
-
       return update(element, bindings, properties)
     }
 
@@ -237,7 +98,10 @@
         }
 
         updatePropertyPath (name, newPath) {
-          const path = this.__paths[name].path
+          const { path, paginated, readOnly } = this.__paths[name]
+          if (paginated) {
+            this.__setValue(name, [], readOnly)
+          }
           var attrs = path.match(pathMatch)
           var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
           for (var i in args) {
@@ -254,26 +118,6 @@
             }
           }
           propertyListeners(this, name, newPath, this.__paths[name])
-        }
-
-        __updatePropertyData (name, ...args) {
-          const property = this.__paths[name]
-          const { path } = property
-          if (typeof path === 'string') {
-            var newPath = path
-            var pathArray = path.match(pathMatch)
-            while (pathArray.length > 0) {
-              newPath = newPath.replace(pathArray.shift(), args.shift())
-            }
-
-            // load data from localDB
-
-            if (window.firebase) {
-              this.__fetchDataViaFirebase(name, newPath, property)
-            } else {
-              this.__fetchDataViaRest(name, newPath, property)
-            }
-          }
         }
 
         updateQuery (name, query) {
@@ -296,6 +140,27 @@
           propertyListeners(this, name, this.__paths[name].path, this.__paths[name])
         }
 
+        __updatePropertyData (name, ...args) {
+          const property = this.__paths[name]
+          const { path } = property
+          if (typeof path === 'string') {
+            var newPath = path
+            var pathArray = path.match(pathMatch)
+            while (pathArray.length > 0) {
+              newPath = newPath.replace(pathArray.shift(), args.shift())
+            }
+
+            // load data from localDB
+            this.__getLocalDB(name, property, newPath)
+
+            if (window.firebase) {
+              this.__fetchDataViaFirebase(name, newPath, property)
+            } else {
+              this.__fetchDataViaRest(name, newPath, property)
+            }
+          }
+        }
+
         __setValue (name, value, readOnly) {
           if (readOnly) {
             this._setProperty(name, value)
@@ -304,7 +169,7 @@
           }
         }
 
-        __fetchDataViaFirebase (name, path, property, p) {
+        __fetchDataViaFirebase (name, path, property) {
           const {
             readOnce,
             type,
@@ -322,28 +187,23 @@
           } = property
 
           const onFirebaseValue = (snapshot) => {
-            console.log('value', name, p)
-            this.__onFirebaseValue(snapshot, name, property, p)
+            this.__onFirebaseValue(snapshot, name, property, path)
           }
 
           const onFirebaseChildAdded = (snapshot, previousChildKey) => {
-            console.log('added', name, p)
-            this.__onFirebaseChildAdded(snapshot, previousChildKey, name, property)
+            this.__onFirebaseChildAdded(snapshot, previousChildKey, name, property, path)
           }
 
           const onFirebaseChildChanged = (snapshot) => {
-            console.log('changed', name, p)
-            this.__onFirebaseChildChanged(snapshot, name, property)
+            this.__onFirebaseChildChanged(snapshot, name, property, path)
           }
 
           const onFirebaseChildMoved = (snapshot, previousChildKey) => {
-            console.log('moved', name, p)
             this.__onFirebaseChildMoved(snapshot, previousChildKey, name, property)
           }
 
           const onFirebaseChildRemoved = (snapshot) => {
-            console.log('removed', name, p)
-            this.__onFirebaseChildRemoved(snapshot, name, property)
+            this.__onFirebaseChildRemoved(snapshot, name, property, path)
           }
 
           var ref = firebase.database().ref(path)
@@ -362,7 +222,11 @@
           }
 
           if (orderBy && ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)] && ((child && orderBy === 'child') || (orderBy !== 'child'))) {
-            ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)](child)
+            if (orderBy === 'child') {
+              ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)](child)
+            } else {
+              ref = ref['orderBy' + orderBy.charAt(0).toUpperCase() + orderBy.slice(1)]()
+            }
           }
 
           if (type === Array) {
@@ -384,7 +248,7 @@
                 this.__refs[name].__onOnce = true
                 this.__refs[name].__initialLoadDone = false
                 this.__refs[name].ref[on]('value', onFirebaseValue, this.__onError, this)
-                if (!readOnce) {
+                if (!(readOnce || paginated)) {
                   this.__refs[name].ref[on]('child_added', onFirebaseChildAdded, this.__onError, this)
                   this.__refs[name].ref[on]('child_removed', onFirebaseChildRemoved, this.__onError, this)
                   this.__refs[name].ref[on]('child_changed', onFirebaseChildChanged, this.__onError, this)
@@ -423,8 +287,8 @@
           }
           if (limitToLast) queryParams.push(`limitToLast=${encodeURI(limitToLast)}`)
           else if (limitToFirst) queryParams.push(`limitToFirst=${encodeURI(limitToFirst)}`)
-          if (child) queryParams.push(`orderBy="${encodeURI(child)}"`)
-          else if (orderBy) queryParams.push(`orderBy=$${encodeURI(orderBy)}`)
+          if (child && orderBy === 'child') queryParams.push(`orderBy="${encodeURI(child)}"`)
+          else if (orderBy) queryParams.push(`orderBy="$${encodeURI(orderBy)}"`)
 
           ref = ref + queryParams.join('&')
           var flag = true
@@ -455,35 +319,25 @@
                   return console.log(json.error)
                 }
                 if (type === Array) {
-                  var data = []
+                  var data = paginated ? (this[name] || []) : []
                   for (var i in json) {
                     var obj = json[i]
                     obj.$key = i
-                    data.push(obj)
-                  }
-                  if (child) {
-                    data.sort((item1, item2) => {
-                      if (item1[child] < item2[child]) {
-                        return -1
+                    var flag = true
+                    for (var j in data) {
+                      if (data[j].$key === i) {
+                        flag = false
+                        break
                       }
-                      if (item1[child] > item2[child]) {
-                        return 1
-                      }
-                      return 0
-                    })
-                    if (desc) {
-                      data.reverse()
                     }
-                  } else if (desc) {
-                    data.sort((item1, item2) => {
-                      if (item1.$key < item2.$key) {
-                        return -1
-                      }
-                      if (item1.$key > item2.$key) {
-                        return 1
-                      }
-                      return 0
-                    })
+                    if (flag) {
+                      data.push(obj)
+                    }
+                  }
+
+                  data = this.__sortData(data, orderBy, child)
+
+                  if (desc) {
                     data.reverse()
                   }
                   Project.__firebaseFetch[ref].value = data
@@ -549,26 +403,45 @@
           return this.__valueWithKey(key, value)
         }
 
-        __onFirebaseValue (snapshot, name, property, p) {
-          const { type, desc, readOnly } = property
+        __onFirebaseValue (snapshot, name, property, path) {
+          const { type, desc, paginated, readOnly, child, orderBy } = property
           if (type === Array) {
-            var data = []
+            var data = paginated ? this[name] || [] : []
             if (snapshot.hasChildren()) {
               snapshot.forEach((childSnapshot) => {
                 var key = childSnapshot.key
                 var value = this.__valueWithKey(key, childSnapshot.val())
                 this.__refs[name].__map[key] = value
-                data.push(value)
+
+                var obj = {}
+                obj[key] = value
+                this.__updateLocalDB(property, obj, path)
+
+                if (paginated) {
+                  var flag = true
+                  for (var i in data) {
+                    if (data[i].$key === key) {
+                      flag = false
+                      break
+                    }
+                  }
+                  if (flag) {
+                    data.push(value)
+                  }
+                } else {
+                  data.push(value)
+                }
               })
             }
 
-            if (desc) {
-              var newData = data.slice()
-              newData.reverse()
-              this.__setValue(name, newData, readOnly)
-            } else {
-              this.__setValue(name, data, readOnly)
+            if (paginated) {
+              data = this.__sortData(data, orderBy, child)
             }
+            if (desc) {
+              data.reverse()
+            }
+            this.__setValue(name, data, readOnly)
+            this.notifySplices(name)
 
             this.__refs[name].__initialLoadDone = true
             this.__refs[name].ref.off('value')
@@ -577,7 +450,7 @@
           }
         }
 
-        __onFirebaseChildAdded (snapshot, previousChildKey, name, property) {
+        __onFirebaseChildAdded (snapshot, previousChildKey, name, property, path) {
           const { desc } = property
           var key = snapshot.key
           if (this.__refs[name].__initialLoadDone) {
@@ -594,11 +467,10 @@
 
           var obj = {}
           obj[snapshot.key] = snapshot.val()
-
-          // updateLocalDB(property, obj)
+          this.__updateLocalDB(property, obj, path)
         }
 
-        __onFirebaseChildRemoved (snapshot, name, property) {
+        __onFirebaseChildRemoved (snapshot, name, property, path) {
           var key = snapshot.key
           var value = this.__refs[name].__map[key]
           if (value) {
@@ -608,11 +480,10 @@
 
           var obj = {}
           obj[snapshot.key] = snapshot.val()
-
-          // updateLocalDB(property, obj, true)
+          this.__updateLocalDB(property, obj, path, true)
         }
 
-        __onFirebaseChildChanged (snapshot, name, property) {
+        __onFirebaseChildChanged (snapshot, name, property, path) {
           var key = snapshot.key
           var prev = this.__refs[name].__map[key]
 
@@ -636,8 +507,7 @@
           }
           var obj = {}
           obj[snapshot.key] = snapshot.val()
-
-          // updateLocalDB(property, obj)
+          this.__updateLocalDB(property, obj, path)
         }
 
         __onFirebaseChildMoved (snapshot, previousChildKey, name, property) {
@@ -658,15 +528,176 @@
             } else {
               this.splice(name, targetIndex, 0, value)
             }
+          }
+        }
 
+        __onError (err) {
+          console.log(err)
+        }
 
-            // updateLocalDB(property, obj)
+        __getLocalDB (name, property, path) {
+          const {
+            readOnly,
+            type,
+            startAt,
+            endAt,
+            equalTo,
+            limitToLast,
+            limitToFirst,
+            orderBy,
+            child,
+            desc
+          } = property
+          const db = new window.PouchDB(path, {auto_compaction: true})
+
+          const find = {}
+
+          // if (child) {
+          //   db.createIndex({
+          //     index: {
+          //       fields: [child]
+          //     }
+          //   }).then((result) => {
+          //     console.log(result)
+          //   })
+          // }
+
+          if (orderBy === 'child' && child) {
+            find.sort = [child]
+          } else if (orderBy === 'value') {
+            find.sort = ['value']
+          } else {
+            find.sort = ['_id']
           }
 
+          find.selector = {}
+          find.selector[find.sort[0]] = {}
 
-          var obj = {}
-          obj[snapshot.key] = snapshot.val()
+          if (startAt) {
+            find.selector[find.sort[0]] = {
+              $gte: startAt
+            }
+          }
 
+          if (endAt) {
+            find.selector[find.sort[0]] = Project.__extends({}, find.selector[find.sort[0]], {
+              $lte: endAt
+            })
+          }
+
+          if (equalTo) {
+            find.selector[find.sort[0]] = {
+              $eq: equalTo
+            }
+          }
+
+          if ((startAt === undefined || startAt === null) && (endAt === undefined || endAt === null) && (equalTo === undefined || equalTo === null)) {
+            find.selector[find.sort[0]] = {
+              $gt: null
+            }
+          }
+
+          if (desc) {
+            var descObj = {}
+            descObj[find.sort[0]] = 'desc'
+            find.sort = [descObj]
+          }
+          console.log(find)
+          // find.sort = null
+
+          db.find(find).then((result) => {
+            var data
+            if (type === Array) {
+              data = []
+              for (var i in result.docs) {
+                data.push(result.docs[i])
+              }
+              data = this.__sortData(data, orderBy, child)
+            } else {
+              data = {}
+              for (var j in result.docs) {
+                data[j] = result.docs[i].val
+              }
+            }
+
+            if (limitToFirst) {
+              var firstLength = data.length - limitToFirst
+              for (var k = 0; k < firstLength; k++) {
+                data.pop()
+              }
+            } else if (limitToLast) {
+              var lastLength = data.length - limitToLast
+              for (var l = 0; l < lastLength; l++) {
+                data.shift()
+              }
+            }
+
+            if (desc) {
+              data.reverse()
+            }
+
+
+
+            this.__setValue(name, data, readOnly)
+          }).catch((err) => {
+            console.error(err)
+            return db.allDocs()
+          }).then((result) => {
+            if (result) {
+              console.log(result)
+            }
+            // console.log(result)
+          })
+        }
+
+        __updateLocalDB (property, data, path, del) {
+          const { child } = property
+          var db = new window.PouchDB(path, {auto_compaction: true})
+          if (child) {
+            db.createIndex({
+              index: {
+                fields: [child]
+              }
+            })
+          }
+          if (!del) {
+            for (var i in data) {
+              db.upsert(i, (doc) => {
+                doc.$key = doc._id
+                typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id]
+                return doc
+              })
+            }
+          } else {
+            for (var j in data) {
+              db.get(j).then((doc) => (db.remove(doc)))
+            }
+          }
+        }
+
+        __sortData (data, orderBy, child) {
+          data.sort((item1, item2) => {
+            var newChild = child && orderBy === 'child' ? child : '$key'
+            if (orderBy === 'child' || orderBy === 'key') {
+              if (item1[newChild] < item2[newChild]) {
+                return -1
+              }
+              if (item1[newChild] > item2[newChild]) {
+                return 1
+              }
+              return 0
+            } else {
+              if (item1 < item2) {
+                return -1
+              }
+              if (item1 > item2) {
+                return 1
+              }
+              return 0
+            }
+          })
+
+          return data
         }
       }
     }
