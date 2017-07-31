@@ -42,13 +42,9 @@
     }
 
     const unbind = (element) => {
-      for (var path in element.__refs) {
-        if (element.__refs[path].functions) {
-          element.__refs[path].ref.off('value', element.__refs[path].functions.onFirebaseValue, this)
-          element.__refs[path].ref.off('child_added', element.__refs[path].functions.onFirebaseChildAdded, this)
-          element.__refs[path].ref.off('child_removed', element.__refs[path].functions.onFirebaseChildRemoved, this)
-          element.__refs[path].ref.off('child_changed', element.__refs[path].functions.onFirebaseChildChanged, this)
-          element.__refs[path].ref.off('child_moved', element.__refs[path].functions.onFirebaseChildMoved, this)
+      for (var name in element.__refs) {
+        if (element.__refs[name].ref) {
+          element.__refs[name].ref.off()
         }
       }
     }

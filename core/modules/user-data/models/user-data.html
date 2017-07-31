@@ -1,0 +1,31 @@
+<script>
+  (() => {
+    window.Project.Mixins.UserData = (superClass) => {
+      /**
+      * @polymer
+      * @extends HTMLElement
+      */
+      return class extends superClass {
+        static get properties () {
+          return Project.__utils.__extends({}, super.properties, {
+            user: {
+
+            }
+          })
+        }
+
+        constructor () {
+          super()
+          Object.defineProperty(this, '__database', { value: Project.__database || 'default' })
+          Object.defineProperty(this, '__model', { value: 'user' })
+          Object.defineProperty(this, '__userPath', { value: {
+            data: `${this.__database}/${this.__model}/data`,
+            query: `${this.__database}/${this.__model}/query`,
+            list: `${this.__database}/${this.__model}/list`
+          }})
+
+        }
+      }
+    }
+  })()
+</script>

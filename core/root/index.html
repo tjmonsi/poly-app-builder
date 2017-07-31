@@ -56,8 +56,8 @@
 
       // set project build
       Object.defineProperty(Project, '__build', { value: '{{build}}' })
-
       Object.defineProperty(Project, '__version', { value: '{{version}}' })
+      Object.defineProperty(Project, '__database', { value: '{{dtabase}}' })
 
       // set config variables
       Object.defineProperty(Project, '__routes', { value: '{{#compileRouting}}{{/compileRouting}}' })

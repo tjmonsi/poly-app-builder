@@ -6,7 +6,8 @@
     "baseHref": "/",
     "analytics": "UA-103026201-1",
     "firebaseVersion": "4.1.4",
-    "firebaseId": "tjkpm-site-yng"
+    "firebaseId": "tjkpm-site-yng",
+    "database": "dev"
   },
   "modules": {
     "app-router": true,
