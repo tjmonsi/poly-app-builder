@@ -53,6 +53,9 @@
       "className": "drawer"
     }
   },
+  "reducers": [
+    "modules/user-data/reducers/reducers.html"
+  ],
   "serviceWorker": {
     "globIgnores": [],
     "runtimeCaching": []

@@ -18,7 +18,8 @@ const injectSharedStyle = () => {
       var string = file.contents.toString('utf8')
       var document = parse5.parseFragment(string)
       var fileArray = file.path.replace(process.cwd() + '/core/modules', '').split('/')
-      var fileName = fileArray.pop()
+      // var fileName = fileArray.pop()
+      fileArray.pop()
       var newFileArray = fileArray.map((directory) => {
         return !directory ? '.' : '..'
       })

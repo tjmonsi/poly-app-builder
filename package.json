@@ -14,7 +14,8 @@
     "build": ""
   },
   "dependencies": {
-    "path-to-regexp": "^1.7.0"
+    "path-to-regexp": "^1.7.0",
+    "redux": "^3.7.2"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",

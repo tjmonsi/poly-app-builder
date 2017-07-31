@@ -5,9 +5,9 @@ const babel = require('gulp-babel')
 const uglify = require('gulp-uglify')
 const cssSlam = require('css-slam').gulp
 const htmlMinifier = require('gulp-html-minifier')
-const { generateCountingSharedBundleUrlMapper, generateSharedDepsMergeStrategy } = require('polymer-bundler')
+// const { generateCountingSharedBundleUrlMapper, generateSharedDepsMergeStrategy } = require('polymer-bundler')
 const { PolymerProject, HtmlSplitter } = require('polymer-build')
-const { destinationFolder, buildName, buildConfig } = require('../utils/utils')
+const { destinationFolder, buildConfig } = require('../utils/utils')
 
 gulp.task('polymer-build', () => {
   const config = buildConfig()
