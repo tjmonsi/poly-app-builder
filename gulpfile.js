@@ -12,7 +12,8 @@ const tasks = [
   'compile-modules-html',
   'generate-sw',
   'polymer-build',
-  'browserify'
+  'browserify',
+  'compile-sass'
 ]
 
 const compilerTasks = []
@@ -27,6 +28,11 @@ const watchers = [
     name: 'watch-browserify',
     files: sources.browserify,
     tasks: 'browserify'
+  },
+  {
+    name: 'watch-sass',
+    files: sources.sass,
+    tasks: 'compile-sass'
   },
   {
     name: 'watch-index',

@@ -1,4 +1,5 @@
 <link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../../bower_components/polymer/lib/mixins/gesture-event-listeners.html">
 <link rel="import" href="../../../../bower_components/app-layout/app-drawer/app-drawer.html">
 
 <dom-module id="project-app-drawer">
@@ -8,15 +9,22 @@
         z-index: 1000
       }
     </style>
-    <app-drawer swipe-open></app-drawer>
+    <app-drawer swipe-open >
+      <a href="/" on-tap="closeDrawer">Home</a><br/>
+      <a href="/p/2/3" on-tap="closeDrawer">Test</a>
+    </app-drawer>
   </template>
   <script>
     (() => {
-      class ProjectAppDrawer extends Polymer.Element {
+      class ProjectAppDrawer extends Polymer.GestureEventListeners(Polymer.Element) {
         static get is () { return 'project-app-drawer' }
 
         openDrawer () {
           this.shadowRoot.querySelector('app-drawer').open()
+        }
+
+        closeDrawer () {
+          this.shadowRoot.querySelector('app-drawer').close()
         }
       }
 
