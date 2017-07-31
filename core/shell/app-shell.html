@@ -7,7 +7,6 @@
 
 <dom-module id="app-shell">
   <template>
-
     <app-router>
     </app-router>
   </template>
@@ -29,6 +28,7 @@
           Object.defineProperty(this, '__shellComponents', { value: JSON.parse(window.Project.__shellComponents) })
           Object.freeze(this.__routes)
           Object.freeze(this.__shellComponents)
+          this.__boundOpenDrawer = this.__openDrawer.bind(this)
         }
 
         connectedCallback () {
@@ -36,6 +36,12 @@
           const router = this.shadowRoot.querySelector('app-router')
           this.__setRoutes(router, this.__routes)
           this.__setComponents(router, this.__shellComponents)
+          this.addEventListener('open-drawer', this.__boundOpenDrawer)
+        }
+
+        disconnectedCallback () {
+          super.disconnectedCallback()
+          this.removeEventListener('open-drawer', this.__boundOpenDrawer)
         }
 
         __setRoutes (router, routes, parentRoute, auth) {
@@ -67,15 +73,56 @@
           for (var j in componentsArray) {
             var node = document.createElement(componentsArray[j].node)
             for (var k in componentsArray[j]) {
-              if (k !== 'node' && k !== '.order') {
+              if (k !== 'node' && k !== '.order' && k !== '.header' && k !== '.drawer') {
                 var attr = k === 'className' ? 'class' : k
                 node.setAttribute(attr, componentsArray[j][k])
               }
+
+              if (k === '.header' && componentsArray[j][k]) {
+                Object.defineProperty(this, '__header', { value: node })
+              }
+
+              if (k === '.drawer' && componentsArray[j][k]) {
+                Object.defineProperty(this, '__drawer', { value: node })
+              }
             }
             content.parentNode.insertBefore(node, content)
+
+            new Promise((resolve, reject) => {
+              var link = document.head.querySelector(`link[rel='lazy-import'][node='${node.nodeName.toLowerCase()}']`)
+              if (link) {
+                if (link.hasAttribute('href')) {
+                  Polymer.importHref(link.getAttribute('href'), (event) => {
+                    resolve(node.nodeName.toLowerCase(), event)
+                  }, (error) => {
+                    reject(new Error(`No file found: ${link.getAttribute('href')}`, {
+                      detail: error
+                    }))
+                  }, true)
+                } else {
+                  reject(new Error('link has no href attribute'))
+                }
+              } else {
+                reject(new Error('no link lazy-import found'))
+              }
+            }).catch((err) => {
+              if (ga) {
+                ga('send', 'exception', {
+                  exDescription: err.message,
+                  exFatal: false
+                })
+              }
+              console.error(err)
+            })
           }
         }
-      }
+
+        __openDrawer () {
+          if (this.__drawer && this.__drawer.openDrawer) {
+            this.__drawer.openDrawer()
+          }
+        }
+       }
 
       window.customElements.define(AppShell.is, AppShell)
     })()

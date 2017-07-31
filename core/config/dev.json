@@ -16,7 +16,8 @@
     "not-found-page": true,
     "home-page": true,
     "default-theme": true,
-    "project-layout": true
+    "project-layout": true,
+    "project-icons": true
   },
   "theme": {
     "src": "core/modules/default-theme",
@@ -25,7 +26,7 @@
   "fragments": {
     "home-page": "modules/home-page/pages/home-page.html",
     "not-found-page": "modules/not-found-page/pages/not-found-page.html",
-    "not-authorized-page": "modules/not-authorized-pages/page/not-authorized-page.html",
+    "not-authorized-page": "modules/not-authorized-pages/pages/not-authorized-page.html",
     "project-app-header": "modules/project-layout/components/project-app-header.html",
     "project-app-drawer": "modules/project-layout/components/project-app-drawer.html"
   },
@@ -42,10 +43,13 @@
   "shellComponents": {
     "project-app-header": {
       ".order": 0,
+      ".header": true,
       "className": "class-1"
     },
     "project-app-drawer": {
-      ".order": 1
+      ".order": 1,
+      ".drawer": true,
+      "className": "drawer"
     }
   },
   "serviceWorker": {

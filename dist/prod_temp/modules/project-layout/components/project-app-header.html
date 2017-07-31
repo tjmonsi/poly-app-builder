@@ -1,0 +1,34 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/polymer/lib/mixins/gesture-event-listeners.html">
+<link rel="import" href="../../../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../../../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../../../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="../../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../project-icons/icons/project-icons.html"><link rel="import" href="./../../default-theme/default-theme.html">
+
+<dom-module id="project-app-header">
+  <template>
+    <style include="default-theme">
+    </style>
+    <app-header reavels="">
+      <app-toolbar>
+        <paper-icon-button icon="projecticons:menu" on-tap="openDrawer">
+          <div main-title="">My app</div>
+          <paper-progress value="10" indeterminate="" bottom-item=""></paper-progress>
+      </paper-icon-button></app-toolbar>
+    </app-header>
+  </template>
+  <script>
+    (() => {
+      class ProjectAppHeader extends Polymer.GestureEventListeners(Polymer.Element) {
+        static get is () { return 'project-app-header' }
+
+        openDrawer () {
+          this.dispatchEvent(new CustomEvent('open-drawer', { bubbles: true, cancelable: true, composed: true }))
+        }
+      }
+
+      window.customElements.define(ProjectAppHeader.is, ProjectAppHeader)
+    })()
+  </script>
+</dom-module>

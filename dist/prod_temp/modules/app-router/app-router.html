@@ -278,6 +278,9 @@
               this.__newRoute = patternMatched
               this.params = namedMatches || {}
             } else {
+              this.params = {
+                error: 'No route found'
+              }
               this.__newRoute = 'not-found'
             }
             this.__checkAuth()
@@ -375,6 +378,9 @@
               console.error(err)
               if (this.__newRoute !== 'not-found') {
                 this.__newRoute = 'not-found'
+                this.params = {
+                  error: err.message
+                }
                 this.__loadView()
               }
             })

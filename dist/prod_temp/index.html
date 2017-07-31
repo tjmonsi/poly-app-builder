@@ -52,7 +52,8 @@
       Object.defineProperty(Project, '__version', { value: '0.0.1' })
 
       // set config variables
-      Object.defineProperty(Project, '__routes', { value: '{"/":{"node":"home-page"},"/p":"home-page-2","not-found":"not-found-page","not-authorized":"not-authorized-page"}' })
+      Object.defineProperty(Project, '__routes', { value: '{"/":{"node":"home-page"},"/p/:id/:id2":"home-page-2","not-found":"not-found-page","not-authorized":"not-authorized-page"}' })
+      Object.defineProperty(Project, '__shellComponents', { value: '{"project-app-header":{".order":0,".header":true,"className":"class-1"},"project-app-drawer":{".order":1,".drawer":true,"className":"drawer"}}' })
 
       if (performance) {
         window.globalStart = performance.now()
@@ -101,6 +102,8 @@
     <link rel="lazy-import" href="modules/home-page/pages/home-page.html" node="home-page">
     <link rel="lazy-import" href="modules/not-found-page/pages/not-found-page.html" node="not-found-page">
     <link rel="lazy-import" href="modules/not-authorized-page/pages/not-authorized-page.html" node="not-authorized-page">
+    <link rel="lazy-import" href="modules/project-layout/components/project-app-header.html" node="project-app-header">
+    <link rel="lazy-import" href="modules/project-layout/components/project-app-drawer.html" node="project-app-drawer">
   </head>
   <body>
     <script>
