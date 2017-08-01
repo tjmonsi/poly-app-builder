@@ -51,8 +51,30 @@
       Object.defineProperty(Project, 'Mixins', { value: {} })
       Object.defineProperty(Project, '__utils', { value: {} })
       Object.defineProperty(Project.__utils, '__extends', { value: Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key] } } } return target } })
+      /**
+       * Merges a property's object value using the defaults way.
+       *
+       * @private
+       * @param {Object} what Initial prototype
+       * @param {String} which Property to collect.
+       * @return {Object} the collected values
+       */
+      Object.defineProperty(Project.__utils, '__collect', { value: (what, which) => {
+        var res = {}
+        while (what) {
+          res = Project.__utils.__extends({}, what[which], res) // Respect prototype priority
+          what = Object.getPrototypeOf(what)
+        }
+        return res
+      }})
+      Object.defineProperty(Project.__utils, '__isEmpty', { value: (obj) => {
+        for (var key in obj) {
+          if (obj.hasOwnProperty(key)) return false
+        }
+        return true
+      }})
       Object.defineProperty(Project, '__firebaseFetch', { value: {} })
-      Object.defineProperty(Project, '__firebaseVersion', { value: '{{firebaseVersion}}' })
+      Object.defineProperty(Project, '__firebaseVersion', { value: '{{app.firebaseVersion}}' })
 
       // set project build
       Object.defineProperty(Project, '__build', { value: '{{build}}' })
@@ -63,6 +85,7 @@
       Object.defineProperty(Project, '__routes', { value: '{{#compileRouting}}{{/compileRouting}}' })
       Object.defineProperty(Project, '__shellComponents', { value: '{{#compileShellComponents}}{{/compileShellComponents}}' })
       Object.defineProperty(Project, 'Reducers', { value: {} })
+      Object.defineProperty(Project, 'Actions', { value: {} })
 
       if (performance) {
         window.globalStart = performance.now()
