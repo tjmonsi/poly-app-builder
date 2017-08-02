@@ -72,6 +72,7 @@ require('./core/gulp/tasks/create-module')
 require('./core/gulp/tasks/delete-module')
 require('./core/gulp/tasks/create-page')
 require('./core/gulp/tasks/create-component')
+require('./core/gulp/tasks/create-model')
 require('./core/gulp/tasks/copy-config')
 
 setupWatchers(watchers)

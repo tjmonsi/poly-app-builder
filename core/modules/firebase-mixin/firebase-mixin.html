@@ -243,7 +243,6 @@
             // Have to wrap this in async so that the off from the previous run takes effect
             Polymer.Async.microTask.run(() => {
               if (this.__loadedViaRest[name] && (readOnce || paginated)) {
-                console.log('already loaded')
                 delete this.__loadedViaRest[name]
                 return
               }
@@ -263,7 +262,6 @@
           } else {
             Polymer.Async.microTask.run(() => {
               if (this.__loadedViaRest[name] && (readOnce || paginated)) {
-                console.log('already loaded')
                 delete this.__loadedViaRest[name]
                 return
               }
@@ -473,7 +471,7 @@
           // console.log(snapshot.val(), snapshot.ref.toString())
 
           if (window.performance && Project.__build !== 'prod') {
-            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + (performance.now() - window.globalStart))
+            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + this.nodeName.toLowerCase() + ' ' + (performance.now() - window.globalStart))
           }
         }
 
