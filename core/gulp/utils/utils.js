@@ -7,6 +7,7 @@ const sources = {
   appShell: 'core/shell/app-shell.html',
   opts: 'core/opts/*.html',
   sass: 'core/modules/**/*.scss',
+  images: ['images/**/*.*', 'images/*.*'],
   browserify: ['core/tasks/utils/browser-essentials', 'core/scripts/*.js', 'core/scripts/**/*.js']
 }
 

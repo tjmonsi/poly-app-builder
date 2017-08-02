@@ -13,7 +13,8 @@ const tasks = [
   'generate-sw',
   'polymer-build',
   'browserify',
-  'compile-sass'
+  'compile-sass',
+  'copy-images'
 ]
 
 const compilerTasks = []
@@ -23,6 +24,11 @@ const watchers = [
     name: 'watch-bower',
     files: sources.bower,
     tasks: 'copy-bower'
+  },
+  {
+    name: 'watch-images',
+    files: sources.images,
+    tasks: 'copy-images'
   },
   {
     name: 'watch-browserify',
