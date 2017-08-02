@@ -1,4 +1,4 @@
- <link rel="import" href="../../firebase-mixin/firebase-mixin.html">
+<link rel="import" href="../../firebase-mixin/firebase-mixin.html">
 <link rel="import" href="../reducers/reducers.html">
 
 <script>
@@ -22,7 +22,7 @@
 
             userProfile: {
               type: Object,
-              firebasePath: '[[__userPath.data]]/[[user.uid]]',
+              firebasePath: '[[userPath.data]]/[[user.uid]]',
               auth: true
             },
 
@@ -64,7 +64,8 @@
           super()
           Object.defineProperty(this, '__database', { value: Project.__database || 'default' })
           Object.defineProperty(this, '__model', { value: 'user' })
-          Object.defineProperty(this, '__userPath', {
+          Object.defineProperty(this, '__actions', { value: Project.Actions.userModel })
+          Object.defineProperty(this, 'userPath', {
             configurable: true,
             value: {
               data: `${this.__database}/${this.__model}/data`,
@@ -72,7 +73,7 @@
               list: `${this.__database}/${this.__model}/list`
             }
           })
-          Object.defineProperty(this, '__actions', { value: Project.Actions.userModel })
+
           Object.freeze(this.__userPath)
           Object.freeze(this.__actions)
           this.__boundAuthStateChanged = this.__authStateChanged.bind(this)

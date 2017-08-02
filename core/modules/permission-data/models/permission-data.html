@@ -1,0 +1,46 @@
+<link rel="import" href="../../user-data/models/user-data.html">
+<link rel="import" href="../reducers/reducers.html">
+
+<script>
+  (() => {
+    window.Project.Mixins.PermissionData = (superClass) => {
+      return class extends window.Project.Mixins.UserData(superClass) {
+        static get properties () {
+          var properties = {
+            permission: {
+              type: Object,
+              firebasePath: '[[permissionPath.data]]/[[user.uid]]',
+              readOnly: true,
+              notify: true,
+              auth: true
+            }
+          }
+          return Project.__utils.__extends({}, super.properties, properties)
+        }
+
+        constructor () {
+          super()
+          var modelName = 'permission'
+          Object.defineProperty(this, '__database', { value: Project.__database || 'default' })
+          Object.defineProperty(this, '__model', { value: modelName })
+          Object.defineProperty(this, '__actions', { value: Project.Actions[`${modelName}Model`] })
+          Object.defineProperty(this, `${modelName}Path`, {
+            configurable: true,
+            value: {
+              data: `${this.__database}/${this.__model}/data`,
+              query: `${this.__database}/${this.__model}/query`,
+              list: `${this.__database}/${this.__model}/list`
+            }
+          })
+
+          Object.freeze(this.__userPath)
+          Object.freeze(this.__actions)
+        }
+
+        getPermission (permission, attr) {
+          return permission[attr]
+        }
+      }
+    }
+  })()
+</script>
