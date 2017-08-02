@@ -21,7 +21,8 @@
     "default-theme": true,
     "project-layout": true,
     "project-icons": true,
-    "user-data": true
+    "user-data": true,
+    "permission-data": true
   },
   "theme": {
     "src": "core/modules/default-theme",

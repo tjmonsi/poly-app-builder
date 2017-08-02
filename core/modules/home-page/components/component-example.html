@@ -1,12 +1,18 @@
 <link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../../bower_components/polymer/lib/elements/dom-if.html">
+<link rel="import" href="../../permission-data/models/permission-data.html">
 
 <dom-module id="component-example">
   <template>
     <style></style>
+
+    <template is="dom-if" if="[[permission.admin]]">
+      Hello
+    </template>
   </template>
   <script>
     (() => {
-      class HomePage extends Polymer.Element {
+      class HomePage extends window.Project.Mixins.PermissionData(Polymer.Element) {
         static get is () { return 'component-example' }
       }
 
