@@ -25,7 +25,7 @@ gulp.task('compile-sass', (done) => {
       fs.mkdirSync(`${destinationFolder()}/${config.theme.src.replace('core/', '')}`)
     }
 
-    fs.writeFileSync(`${destinationFolder()}/${config.theme.src.replace('core/', '')}/${theme.name}-theme.html`, template(themeTemplate)({ themeName: theme.name, style: result.css.toString('utf8') }), 'utf8')
+    fs.writeFileSync(`${destinationFolder()}/${config.theme.src.replace('core/', '')}/${theme.name}-theme.html`, template(themeTemplate)({ themeName: theme.name, style: result.css.toString('utf8'), dependencies: theme.dependencies }), 'utf8')
     // console.log(result.css.toString('utf8'))
     done()
   })
