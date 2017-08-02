@@ -1,0 +1,19 @@
+<link rel="import" href="../bower_components/polymer-redux/polymer-redux.html">
+<script>
+  (() => {
+    Object.defineProperty(Project, '__stateStore', { value: window.Redux.createStore((state = {}, action) => (state)) })
+    Object.defineProperty(Project, 'updateReducers', { value: () => {
+      window.Project.__stateStore.replaceReducer(window.Redux.combineReducers(Project.Reducers))
+    }})
+    Object.defineProperty(Project, 'getState', { value: () => {
+      return window.Project.__stateStore.getState()
+    }})
+    Object.defineProperty(Project, 'dispatch', { value: (action) => {
+      return window.Project.__stateStore.dispatch(action)
+    }})
+    Object.defineProperty(Project, 'subscribe', { value: (listener) => {
+      return window.Project.__stateStore.subscribe(listener)
+    }})
+    window.Project.Mixins.ReduxMixin = window.PolymerRedux(Project.__stateStore)
+  })()
+</script>

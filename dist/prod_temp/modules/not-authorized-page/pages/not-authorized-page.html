@@ -1,0 +1,16 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="not-authorized-page">
+  <template>
+    Not authorized
+  </template>
+  <script>
+    (() => {
+      class NotAuthorizedPage extends Polymer.Element {
+        static get is () { return 'not-authorized-page' }
+      }
+
+      window.customElements.define(NotAuthorizedPage.is, NotAuthorizedPage)
+    })()
+  </script>
+</dom-module>

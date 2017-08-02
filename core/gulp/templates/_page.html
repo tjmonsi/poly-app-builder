@@ -1,0 +1,16 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="<%= pageNameSlug %>-page">
+  <template>
+    <%= pageName %>
+  </template>
+  <script>
+    (() => {
+      class <%= pageNamePascalCase %>Page extends Polymer.Element {
+        static get is () { return '<%= pageNameSlug %>-page' }
+      }
+
+      window.customElements.define(<%= pageNamePascalCase %>Page.is, <%= pageNamePascalCase %>Page)
+    })()
+  </script>
+</dom-module>

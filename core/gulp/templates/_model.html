@@ -1,0 +1,49 @@
+<link rel="import" href="../../firebase-mixin/firebase-mixin.html">
+<link rel="import" href="../reducers/reducers.html">
+
+<script>
+  (() => {
+    window.Project.Mixins.<%= modelNamePascalCase %>Data = (superClass) => {
+      /**
+      * @polymer
+      * @extends HTMLElement
+      */
+      return class extends window.Project.Mixins.FirebaseMixin(superClass) {
+        static get properties () {
+          var properties = {
+            <%= modelNameSlug %>: {
+              type: Object,
+              firebasePath: '[[<%= modelNameSlug %>Path.data]]/[[<%= modelNameSlug %>Id]]',
+              readOnly: true,
+              notify: true,
+              auth: true
+            },
+            <%= modelNameSlug %>Id: {
+              type: String
+            }
+          }
+          return Project.__utils.__extends({}, super.properties, properties)
+        }
+
+        constructor () {
+          super()
+          const modelName = '<%= modelNameSlug %>'
+          Object.defineProperty(this, `__${modelName}Database`, { value: Project.__database || 'default' })
+          Object.defineProperty(this, `__${modelName}Model`, { value: modelName })
+          Object.defineProperty(this, `__${modelName}Actions`, { value: Project.Actions[`${modelName}Model`] })
+          Object.defineProperty(this, `${modelName}Path`, {
+            configurable: true,
+            value: {
+              data: `${this[`__${modelName}Database`]}/${this[`__${modelName}Model`]}/data`,
+              query: `${this[`__${modelName}Database`]}/${this[`__${modelName}Model`]}/query`,
+              list: `${this[`__${modelName}Database`]}/${this[`__${modelName}Model`]}/list`
+            }
+          })
+
+          Object.freeze(this[`${modelName}Path`])
+          Object.freeze(this[`__${modelName}Actions`])
+        }
+      }
+    }
+  })()
+</script>

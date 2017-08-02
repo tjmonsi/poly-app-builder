@@ -1,0 +1,17 @@
+{
+  "name": "project-icons",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src/bower_components/",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.1",
+    "iron-icon": "PolymerElements/iron-icon#1 - 2",
+    "iron-iconset-svg": "PolymerElements/iron-iconset-svg#1 - 2"
+  }
+}

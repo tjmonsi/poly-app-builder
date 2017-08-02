@@ -1,0 +1,16 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="page-two-page">
+  <template>
+    page two
+  </template>
+  <script>
+    (() => {
+      class PageTwo extends Polymer.Element {
+        static get is () { return 'page-two-page' }
+      }
+
+      window.customElements.define(PageTwo.is, PageTwo)
+    })()
+  </script>
+</dom-module>
