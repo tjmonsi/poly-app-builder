@@ -3,7 +3,6 @@
 
 <script>
   (() => {
-    console.log('hello')
     const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
 
     const propertyListeners = (element, name, firebasePath, property) => {
@@ -65,7 +64,7 @@
           super.connectedCallback()
           var startTime
           const properties = Project.__utils.__collect(this.constructor, 'properties')
-          if (performance && Project.__build !== 'prod') {
+          if (window.performance && Project.__build !== 'prod') {
             console.log('Firebase Mixin: Binding Property: ' + this.nodeName.toLowerCase() + ' ' + (performance.now() - window.globalStart))
           }
           bind(this, properties, startTime)
@@ -142,13 +141,16 @@
 
           var dbPaths = new window.PouchDB('firebasePaths')
           dbPaths.upsert(property.firebasePath, (doc) => {
+            if (!(doc.paths instanceof Array)) {
+              doc.paths = []
+            }
             if (doc.paths.indexOf(newPath) < 0) doc.paths.push(newPath)
             return doc
           })
 
           this.__getLocalDB(name, property, newPath)
-          if (performance && Project.__build !== 'prod') {
-            console.log('Fetch data via Browser DB: ' + (performance.now() - window.globalStart))
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('Firebase Mixin: LocalDB: variable ' + name + ' ' + (performance.now() - window.globalStart))
           }
 
           if (window.firebase) {
@@ -318,8 +320,8 @@
 
             fetch(ref)
               .then((response) => {
-                if (performance && Project.__build !== 'prod') {
-                  console.log('Fetch data via Firebase REST: ' + (performance.now() - window.globalStart))
+                if (window.performance && Project.__build !== 'prod') {
+                  console.log('Firebase Mixin: REST: variable ' + name + ' ' + (performance.now() - window.globalStart))
                 }
                 return response.json()
               })
@@ -368,10 +370,6 @@
           }
 
           if (!window.firebase) {
-            // if (performance) {
-            //   console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
-            // }
-
             const src = `https://www.gstatic.com/firebasejs/${Project.__firebaseVersion || '4.1.4'}/firebase.js`
             var script = document.createElement('script')
             var t = document.getElementsByTagName('script')[0]
@@ -396,8 +394,8 @@
                   console.error('There\'s already a default firebase app initialized, please put an appName to the config for ' + config.projectId)
                 }
               }
-              if (performance && Project.__build !== 'prod') {
-                console.log('Firebase apps initialized: ' + (performance.now() - window.globalStart))
+              if (window.performance && Project.__build !== 'prod') {
+                console.log('Firebase Mixin: Apps Initialized: ' + (performance.now() - window.globalStart))
               }
               this.__fetchDataViaFirebase(name, firebasePath, property)
             }
@@ -454,8 +452,8 @@
             this.__updateLocalDB(property, snapshot.val(), firebasePath)
           }
 
-          if (performance && Project.__build !== 'prod') {
-            console.log('Fetch data via Firebase SDK onvlaue: ' + (performance.now() - window.globalStart))
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + (performance.now() - window.globalStart))
           }
         }
 
@@ -575,7 +573,6 @@
         }
 
         __deleteLocalDB (path) {
-          console.log(path)
           if (path) {
             new window.PouchDB('firebasePath_' + path).destroy()
           }
@@ -650,6 +647,10 @@
           }
           // find.sort = null
 
+          // db.getIndexes().then((result) => {
+          //   console.log(result)
+          // })
+
           db.find(find).then((result) => {
             var data
             if (type === Array) {
@@ -683,7 +684,7 @@
 
             this.__setValue(name, data, readOnly)
           }).catch((err) => {
-            console.error(err)
+            console.log(err)
             return db.allDocs()
           }).then((result) => {
             if (result) {

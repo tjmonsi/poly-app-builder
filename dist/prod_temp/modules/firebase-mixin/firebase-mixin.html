@@ -5,26 +5,25 @@
   (() => {
     const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
 
-    const propertyListeners = (element, name, path, property) => {
-      element.__paths[name] = Project.__utils.__extends({}, property, { path })
-      var attrs = path.match(pathMatch)
-      var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
-      var args2 = args.map(arg => element.get(arg))
+    const propertyListeners = (element, name, firebasePath, property) => {
+      element.__properties[name] = Project.__utils.__extends({}, property, { firebasePath })
+      var { args } = element.__gettingArgs(firebasePath, element)
       var methodName = `__updatePropertyData("${name}", ${args.join(', ')})`
       element._createMethodObserver(methodName)
-      element.__updatePropertyData(name, ...args2)
+      element.__updatePropertyData(name)
     }
 
     const update = (element, bindings, properties) => {
       bindings.forEach(name => {
-        var { path, auth } = properties[name]
-        var paths = new window.PouchDB('paths', {auto_compaction: true})
-        paths.upsert(path, (doc) => {
-          doc.path = path
-          doc.auth = auth
+        var { firebasePath } = properties[name]
+        var savePath = (typeof firebasePath === 'function') ? firebasePath() : firebasePath
+        var paths = new window.PouchDB('firebasePaths', {auto_compaction: true})
+        paths.upsert(savePath, (doc) => {
+          doc.firebasePath = savePath
+          doc.paths = []
           return doc
         })
-        propertyListeners(element, name, path, properties[name])
+        propertyListeners(element, name, firebasePath, properties[name])
       })
     }
 
@@ -32,7 +31,7 @@
       var bindings = Object.keys(properties)
         .filter((name) => {
           var property = properties[name]
-          if (Object.prototype.hasOwnProperty.call(property, 'path')) {
+          if (Object.prototype.hasOwnProperty.call(property, 'firebasePath')) {
             return true
           }
           return false
@@ -42,32 +41,11 @@
     }
 
     const unbind = (element) => {
-      for (var path in element.__refs) {
-        if (element.__refs[path].functions) {
-          element.__refs[path].ref.off('value', element.__refs[path].functions.onFirebaseValue, this)
-          element.__refs[path].ref.off('child_added', element.__refs[path].functions.onFirebaseChildAdded, this)
-          element.__refs[path].ref.off('child_removed', element.__refs[path].functions.onFirebaseChildRemoved, this)
-          element.__refs[path].ref.off('child_changed', element.__refs[path].functions.onFirebaseChildChanged, this)
-          element.__refs[path].ref.off('child_moved', element.__refs[path].functions.onFirebaseChildMoved, this)
+      for (var name in element.__refs) {
+        if (element.__refs[name].ref) {
+          element.__refs[name].ref.off()
         }
       }
-    }
-
-    /**
-       * Merges a property's object value using the defaults way.
-       *
-       * @private
-       * @param {Object} what Initial prototype
-       * @param {String} which Property to collect.
-       * @return {Object} the collected values
-       */
-    const collect = (what, which) => {
-      var res = {}
-      while (what) {
-        res = Project.__utils.__extends({}, what[which], res) // Respect prototype priority
-        what = Object.getPrototypeOf(what)
-      }
-      return res
     }
 
     window.Project.Mixins.FirebaseMixin = (superClass) => {
@@ -79,16 +57,16 @@
         constructor () {
           super()
           Object.defineProperty(this, '__refs', { value: {} })
-          Object.defineProperty(this, '__paths', { value: {} })
+          Object.defineProperty(this, '__properties', { value: {} })
         }
 
         connectedCallback () {
           super.connectedCallback()
           var startTime
-          // if (performance) {
-          //   console.log('Started binding the firebase path to a property: ' + (performance.now() - window.globalStart))
-          // }
-          const properties = collect(this.constructor, 'properties')
+          const properties = Project.__utils.__collect(this.constructor, 'properties')
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('Firebase Mixin: Binding Property: ' + this.nodeName.toLowerCase() + ' ' + (performance.now() - window.globalStart))
+          }
           bind(this, properties, startTime)
         }
 
@@ -98,11 +76,11 @@
         }
 
         updatePropertyPath (name, newPath) {
-          const { path, paginated, readOnly } = this.__paths[name]
+          const { firebasePath, paginated, readOnly } = this.__properties[name]
           if (paginated) {
             this.__setValue(name, [], readOnly)
           }
-          var attrs = path.match(pathMatch)
+          var attrs = firebasePath.match(pathMatch)
           var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
           for (var i in args) {
             var effects = this.__observeEffects[args[i].split(/\./g)[0]]
@@ -117,11 +95,11 @@
               effects.splice(index, 1)
             }
           }
-          propertyListeners(this, name, newPath, this.__paths[name])
+          propertyListeners(this, name, newPath, this.__properties[name])
         }
 
         updateQuery (name, query) {
-          var path = this.__paths[name].path
+          var firebasePath = this.__properties[name].firebasePath
           var obj = {}
           if (query.equalTo != null) {
             obj.startAt = null
@@ -136,40 +114,53 @@
             obj.limitToLast = null
           }
 
-          this.__paths[name] = Project.__utils.__extends({}, this.__paths[name], obj, query, { path })
-          propertyListeners(this, name, this.__paths[name].path, this.__paths[name])
+          this.__properties[name] = Project.__utils.__extends({}, this.__properties[name], obj, query, { firebasePath })
+          propertyListeners(this, name, this.__properties[name].firebasePath, this.__properties[name])
         }
 
-        __updatePropertyData (name, ...args) {
-          const property = this.__paths[name]
-          const { path } = property
-          if (typeof path === 'string') {
-            var newPath = path
-            var pathArray = path.match(pathMatch)
-            while (pathArray.length > 0) {
-              newPath = newPath.replace(pathArray.shift(), args.shift())
-            }
-
-            // load data from localDB
-            this.__getLocalDB(name, property, newPath)
-
-            if (window.firebase) {
-              this.__fetchDataViaFirebase(name, newPath, property)
-            } else {
-              this.__fetchDataViaRest(name, newPath, property)
-            }
-          }
-        }
-
-        __setValue (name, value, readOnly) {
-          if (readOnly) {
-            this._setProperty(name, value)
+        updateData (name) {
+          if (name) {
+            this.__updatePropertyData(name)
           } else {
-            this.set(name, value)
+            for (var i in this.__properties) {
+              this.__updatePropertyData(i)
+            }
           }
         }
 
-        __fetchDataViaFirebase (name, path, property) {
+        __gettingArgs (firebasePath, element) {
+          var attrs = firebasePath.match(pathMatch)
+          var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
+          var args2 = args.map(arg => element.get(arg))
+          return { args, args2 }
+        }
+
+        __updatePropertyData (name) {
+          var newPath = this.__computePath(name)
+          const property = this.__properties[name]
+
+          var dbPaths = new window.PouchDB('firebasePaths')
+          dbPaths.upsert(property.firebasePath, (doc) => {
+            if (!(doc.paths instanceof Array)) {
+              doc.paths = []
+            }
+            if (doc.paths.indexOf(newPath) < 0) doc.paths.push(newPath)
+            return doc
+          })
+
+          this.__getLocalDB(name, property, newPath)
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('Firebase Mixin: LocalDB: variable ' + name + ' ' + (performance.now() - window.globalStart))
+          }
+
+          if (window.firebase) {
+            this.__fetchDataViaFirebase(name, newPath, property)
+          } else {
+            this.__fetchDataViaRest(name, newPath, property)
+          }
+        }
+
+        __fetchDataViaFirebase (name, firebasePath, property) {
           const {
             readOnce,
             type,
@@ -183,19 +174,20 @@
             limitToFirst,
             orderBy,
             child,
-            paginated
+            paginated,
+            appName
           } = property
 
           const onFirebaseValue = (snapshot) => {
-            this.__onFirebaseValue(snapshot, name, property, path)
+            this.__onFirebaseValue(snapshot, name, property, firebasePath)
           }
 
           const onFirebaseChildAdded = (snapshot, previousChildKey) => {
-            this.__onFirebaseChildAdded(snapshot, previousChildKey, name, property, path)
+            this.__onFirebaseChildAdded(snapshot, previousChildKey, name, property, firebasePath)
           }
 
           const onFirebaseChildChanged = (snapshot) => {
-            this.__onFirebaseChildChanged(snapshot, name, property, path)
+            this.__onFirebaseChildChanged(snapshot, name, property, firebasePath)
           }
 
           const onFirebaseChildMoved = (snapshot, previousChildKey) => {
@@ -203,10 +195,14 @@
           }
 
           const onFirebaseChildRemoved = (snapshot) => {
-            this.__onFirebaseChildRemoved(snapshot, name, property, path)
+            this.__onFirebaseChildRemoved(snapshot, name, property, firebasePath)
           }
 
-          var ref = firebase.database().ref(path)
+          // console.log(firebasePath)
+
+          var app = appName == null ? firebase.app() : firebase.app(appName)
+
+          var ref = app.database().ref(firebasePath)
           var on = readOnce || paginated ? 'once' : 'on'
           if (equalTo) {
             ref = ref.equalTo(equalTo, equalToKey)
@@ -257,11 +253,15 @@
               }
             })
           } else {
-            this.__refs[name].ref[on]('value', this.__refs[path].functions.onFirebaseValue, this.__onError, this)
+            this.__refs[name] = this.__refs[name] || {
+              __data: {}
+            }
+            this.__refs[name].ref = ref
+            this.__refs[name].ref[on]('value', onFirebaseValue, this.__onError, this)
           }
         }
 
-        __fetchDataViaRest (name, path, property) {
+        __fetchDataViaRest (name, firebasePath, property) {
           const {
             readOnly,
             type,
@@ -273,12 +273,21 @@
             orderBy,
             child,
             desc,
-            paginated
+            paginated,
+            appName
           } = property
 
           const queryParams = []
 
-          var ref = `https://${Project.__firebaseConfig.projectId}.firebaseio.com/${path}.json?`
+          var projectId
+          for (var ci in Project.__firebaseConfig) {
+            if ((appName && Project.__firebaseConfig[ci].appName === appName) || !Project.__firebaseConfig[ci].appName) {
+              projectId = Project.__firebaseConfig[ci].projectId
+              break
+            }
+          }
+
+          var ref = `https://${projectId}.firebaseio.com/${firebasePath}.json?`
           if (equalTo) {
             queryParams.push(`equalTo=${encodeURI(equalTo)}`)
           } else {
@@ -293,9 +302,12 @@
           ref = ref + queryParams.join('&')
           var flag = true
 
+          // console.log(ref)
+
           if (Project.__firebaseFetch[ref]) {
             var fetcher = Project.__firebaseFetch[ref]
-            if (new Date() - fetcher.time <= 10) {
+
+            if (new Date() - fetcher.time <= 1000) {
               flag = false
               this.__setValue(name, fetcher.value, readOnly)
             }
@@ -308,12 +320,16 @@
 
             fetch(ref)
               .then((response) => {
-                // if (performance) {
-                //   console.log('Data fetched from Firebase REST: ' + (performance.now() - window.globalStart))
-                // }
+                if (window.performance && Project.__build !== 'prod') {
+                  console.log('Firebase Mixin: REST: variable ' + name + ' ' + (performance.now() - window.globalStart))
+                }
                 return response.json()
               })
               .then((json) => {
+                if (!json) {
+                  return
+                }
+                this.__updateLocalDB(property, json, firebasePath)
               // updateLocalDB(property, json)
                 if (json.error) {
                   return console.log(json.error)
@@ -354,9 +370,6 @@
           }
 
           if (!window.firebase) {
-            // if (performance) {
-            //   console.log('Firebase SDK being loaded: ' + (performance.now() - window.globalStart))
-            // }
             const src = `https://www.gstatic.com/firebasejs/${Project.__firebaseVersion || '4.1.4'}/firebase.js`
             var script = document.createElement('script')
             var t = document.getElementsByTagName('script')[0]
@@ -364,11 +377,27 @@
             script.id = 'firebase-script'
             script.src = src
             script.onload = script.onreadstatechange = () => {
-              firebase.initializeApp(Project.__firebaseConfig)
-              // if (performance) {
-              //   console.log('Firebase app initialized: ' + (performance.now() - window.globalStart))
-              // }
-              this.__fetchDataViaFirebase(name, path, property)
+              var defaultFlag = null
+              for (var c in Project.__firebaseConfig) {
+                var config = Project.__firebaseConfig[c]
+                var appName = config.appName
+                // delete config.appName
+                if (appName) {
+                  firebase.initializeApp(config, appName)
+                  window.dispatchEvent(new CustomEvent('firebase-app-initialized', { detail: {
+                    appName
+                  }}))
+                } else if (!defaultFlag) {
+                  firebase.initializeApp(config)
+                  window.dispatchEvent(new CustomEvent('firebase-app-initialized'))
+                } else {
+                  console.error('There\'s already a default firebase app initialized, please put an appName to the config for ' + config.projectId)
+                }
+              }
+              if (window.performance && Project.__build !== 'prod') {
+                console.log('Firebase Mixin: Apps Initialized: ' + (performance.now() - window.globalStart))
+              }
+              this.__fetchDataViaFirebase(name, firebasePath, property)
             }
             if (!document.head.querySelector(`#firebase-script`)) {
               t.parentNode.insertBefore(script, t)
@@ -376,34 +405,7 @@
           }
         }
 
-        __indexFromKey (data, key) {
-          if (key != null) {
-            for (var i = 0; i < data.length; i++) {
-              if (data[i].$key === key) {
-                return i
-              }
-            }
-          }
-          return -1
-        }
-
-        __valueWithKey (key, value) {
-          var leaf = typeof value !== 'object'
-          if (leaf) {
-            value = {$key: key, $val: value}
-          } else {
-            value.$key = key
-          }
-          return value
-        }
-
-        __snapshotToValue (snapshot) {
-          var key = snapshot.key
-          var value = snapshot.val()
-          return this.__valueWithKey(key, value)
-        }
-
-        __onFirebaseValue (snapshot, name, property, path) {
+        __onFirebaseValue (snapshot, name, property, firebasePath) {
           const { type, desc, paginated, readOnly, child, orderBy } = property
           if (type === Array) {
             var data = paginated ? this[name] || [] : []
@@ -415,7 +417,7 @@
 
                 var obj = {}
                 obj[key] = value
-                this.__updateLocalDB(property, obj, path)
+                this.__updateLocalDB(property, obj, firebasePath)
 
                 if (paginated) {
                   var flag = true
@@ -447,10 +449,15 @@
             this.__refs[name].ref.off('value')
           } else {
             this.__setValue(name, snapshot.val(), readOnly)
+            this.__updateLocalDB(property, snapshot.val(), firebasePath)
+          }
+
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + (performance.now() - window.globalStart))
           }
         }
 
-        __onFirebaseChildAdded (snapshot, previousChildKey, name, property, path) {
+        __onFirebaseChildAdded (snapshot, previousChildKey, name, property, firebasePath) {
           const { desc } = property
           var key = snapshot.key
           if (this.__refs[name].__initialLoadDone) {
@@ -467,10 +474,10 @@
 
           var obj = {}
           obj[snapshot.key] = snapshot.val()
-          this.__updateLocalDB(property, obj, path)
+          this.__updateLocalDB(property, obj, firebasePath)
         }
 
-        __onFirebaseChildRemoved (snapshot, name, property, path) {
+        __onFirebaseChildRemoved (snapshot, name, property, firebasePath) {
           var key = snapshot.key
           var value = this.__refs[name].__map[key]
           if (value) {
@@ -480,10 +487,10 @@
 
           var obj = {}
           obj[snapshot.key] = snapshot.val()
-          this.__updateLocalDB(property, obj, path, true)
+          this.__updateLocalDB(property, obj, firebasePath, true)
         }
 
-        __onFirebaseChildChanged (snapshot, name, property, path) {
+        __onFirebaseChildChanged (snapshot, name, property, firebasePath) {
           var key = snapshot.key
           var prev = this.__refs[name].__map[key]
 
@@ -507,7 +514,7 @@
           }
           var obj = {}
           obj[snapshot.key] = snapshot.val()
-          this.__updateLocalDB(property, obj, path)
+          this.__updateLocalDB(property, obj, firebasePath)
         }
 
         __onFirebaseChildMoved (snapshot, previousChildKey, name, property) {
@@ -531,11 +538,47 @@
           }
         }
 
-        __onError (err) {
-          console.log(err)
+        __computePath (name) {
+          if (name) {
+            var { args2 } = this.__gettingArgs(this.__properties[name].firebasePath, this)
+            const property = this.__properties[name]
+            const { firebasePath } = property
+
+            if (typeof firebasePath === 'string') {
+              var newPath = firebasePath
+              var pathArray = firebasePath.match(pathMatch)
+              while (pathArray.length > 0) {
+                newPath = newPath.replace(pathArray.shift(), args2.shift())
+              }
+
+              return newPath
+            }
+          }
         }
 
-        __getLocalDB (name, property, path) {
+        __deleteAuthDB () {
+          for (var name in this.__properties) {
+            const { firebasePath, auth } = this.__properties[name]
+            var dbPaths = new window.PouchDB('firebasePaths', { auto_compaction: true })
+            dbPaths.upsert(firebasePath, (doc) => {
+              if (auth) {
+                for (var i in doc.paths) {
+                  this.__deleteLocalDB(doc.paths[i])
+                }
+                doc.paths = []
+              }
+              return doc
+            })
+          }
+        }
+
+        __deleteLocalDB (path) {
+          if (path) {
+            new window.PouchDB('firebasePath_' + path).destroy()
+          }
+        }
+
+        __getLocalDB (name, property, firebasePath) {
           const {
             readOnly,
             type,
@@ -548,7 +591,7 @@
             child,
             desc
           } = property
-          const db = new window.PouchDB(path, {auto_compaction: true})
+          const db = new window.PouchDB('firebasePath_' + firebasePath, {auto_compaction: true})
 
           const find = {}
 
@@ -604,6 +647,10 @@
           }
           // find.sort = null
 
+          // db.getIndexes().then((result) => {
+          //   console.log(result)
+          // })
+
           db.find(find).then((result) => {
             var data
             if (type === Array) {
@@ -615,31 +662,29 @@
             } else {
               data = {}
               for (var j in result.docs) {
-                data[j] = result.docs[i].val
+                data[result.docs[j].$key] = result.docs[j].value
               }
             }
 
-            if (limitToFirst) {
+            if (limitToFirst && type === Array) {
               var firstLength = data.length - limitToFirst
               for (var k = 0; k < firstLength; k++) {
                 data.pop()
               }
-            } else if (limitToLast) {
+            } else if (limitToLast && type === Array) {
               var lastLength = data.length - limitToLast
               for (var l = 0; l < lastLength; l++) {
                 data.shift()
               }
             }
 
-            if (desc) {
+            if (desc && type === Array) {
               data.reverse()
             }
 
-
-
             this.__setValue(name, data, readOnly)
           }).catch((err) => {
-            console.error(err)
+            console.log(err)
             return db.allDocs()
           }).then((result) => {
             if (result) {
@@ -649,9 +694,9 @@
           })
         }
 
-        __updateLocalDB (property, data, path, del) {
+        __updateLocalDB (property, data, firebasePath, del) {
           const { child } = property
-          var db = new window.PouchDB(path, {auto_compaction: true})
+          var db = new window.PouchDB('firebasePath_' + firebasePath, {auto_compaction: true})
           if (child) {
             db.createIndex({
               index: {
@@ -662,8 +707,8 @@
           if (!del) {
             for (var i in data) {
               db.upsert(i, (doc) => {
-                doc.$key = doc._id
-                typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id]
+                doc.$key = doc._id || i
+                typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id || i]
                 return doc
               })
             }
@@ -697,6 +742,45 @@
           })
 
           return data
+        }
+
+        __setValue (name, value, readOnly) {
+          if (readOnly) {
+            this._setProperty(name, value)
+          } else {
+            this.set(name, value)
+          }
+        }
+
+        __onError (err) {
+          console.log(err)
+        }
+
+        __indexFromKey (data, key) {
+          if (key != null) {
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].$key === key) {
+                return i
+              }
+            }
+          }
+          return -1
+        }
+
+        __valueWithKey (key, value) {
+          var leaf = typeof value !== 'object'
+          if (leaf) {
+            value = {$key: key, $val: value}
+          } else {
+            value.$key = key
+          }
+          return value
+        }
+
+        __snapshotToValue (snapshot) {
+          var key = snapshot.key
+          var value = snapshot.val()
+          return this.__valueWithKey(key, value)
         }
       }
     }

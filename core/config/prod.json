@@ -5,8 +5,11 @@
     "description": "Polyblog App System Description",
     "baseHref": "/",
     "analytics": "UA-103026201-1",
-    "firebaseVersion": "4.1.4",
-    "firebaseId": "tjkpm-site-yng"
+    "firebaseVersion": "4.2.0",
+    "firebaseId": [
+      "tjkpm-site-yng"
+    ],
+    "database": "dev"
   },
   "modules": {
     "app-router": true,
@@ -17,7 +20,8 @@
     "home-page": true,
     "default-theme": true,
     "project-layout": true,
-    "project-icons": true
+    "project-icons": true,
+    "user-data": true
   },
   "theme": {
     "src": "core/modules/default-theme",
@@ -52,6 +56,9 @@
       "className": "drawer"
     }
   },
+  "reducers": [
+    "modules/user-data/reducers/reducers.html"
+  ],
   "serviceWorker": {
     "globIgnores": [],
     "runtimeCaching": []

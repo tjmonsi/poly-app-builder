@@ -6,7 +6,9 @@
     "baseHref": "/",
     "analytics": "UA-103026201-1",
     "firebaseVersion": "4.2.0",
-    "firebaseId": "tjkpm-site-yng",
+    "firebaseId": [
+      "tjkpm-site-yng"
+    ],
     "database": "dev"
   },
   "modules": {
@@ -28,7 +30,7 @@
   "fragments": {
     "home-page": "modules/home-page/pages/home-page.html",
     "not-found-page": "modules/not-found-page/pages/not-found-page.html",
-    "not-authorized-page": "modules/not-authorized-pages/pages/not-authorized-page.html",
+    "not-authorized-page": "modules/not-authorized-page/pages/not-authorized-page.html",
     "project-app-header": "modules/project-layout/components/project-app-header.html",
     "project-app-drawer": "modules/project-layout/components/project-app-drawer.html"
   },

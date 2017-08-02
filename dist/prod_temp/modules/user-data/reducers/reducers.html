@@ -1,0 +1,40 @@
+<script>
+  window.Project.Actions.userModel = {
+    statusKnown: 'USER_STATUS_KNOWN',
+    statusUnknown: 'USER_STATUS_UNKNOWN',
+    signIn: 'USER_USERIN',
+    signOut: 'USER_SIGNOUT'
+  }
+  window.Project.Reducers.userModel = (state = { default: { userStatusKnown: false }, apps: {} }, action) => {
+    var obj
+    const setState = (newState) => {
+      if (action.appName) {
+        var newApps = {}
+        newApps[action.appName] = Project.__utils.__extends({}, state.apps[action.appName], newState)
+        obj = { apps: Project.__utils.__extends({}, state.apps, newApps) }
+        return Project.__utils.__extends({}, state, obj)
+      }
+      return Project.__utils.__extends({}, state, { default: Project.__utils.__extends({}, state.default, newState) })
+    }
+
+    switch (action.type) {
+      case Project.Actions.userModel.statusKnown:
+        return setState({ userStatusKnown: true })
+      case Project.Actions.userModel.statusUnknown:
+        return setState({ userStatusKnown: false })
+      case Project.Actions.userModel.signIn:
+        return setState({
+          user: action.user,
+          signedIn: true
+        })
+      case Project.Actions.userModel.signOut:
+        return setState({
+          user: null,
+          signedIn: false
+        })
+      default:
+        return state
+    }
+  }
+  window.Project.updateReducers()
+</script>

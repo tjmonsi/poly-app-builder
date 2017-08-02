@@ -190,6 +190,8 @@
           var namedMatches = {}
           this.params = {}
 
+          this.dispatchEvent(new CustomEvent('page-loading', { bubbles: true, cancelable: true, composed: true }))
+
           // TODO: TEST IF THIS IS THE RIGHT WAY
           this.currentRoute = path
           // goes checks each and every route
@@ -422,15 +424,17 @@
             document.title = newView.title
           }
 
-          this.dispatchEvent(new CustomEvent('view-loaded'), {
-            detail: {
-              view: this.__newView
-            }
-          })
+          // this.dispatchEvent(new CustomEvent('view-loaded'), {
+          //   detail: {
+          //     view: this.__newView
+          //   }
+          // })
 
           // if (performance) {
           //   console.log('Component viewed in customized router: ' + (performance.now() - window.globalStart))
           // }
+
+          this.dispatchEvent(new CustomEvent('page-loaded', { bubbles: true, cancelable: true, composed: true }))
 
           if (ga) {
             ga('set', 'page', this.path)

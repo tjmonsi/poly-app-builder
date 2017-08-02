@@ -2,8 +2,10 @@
 <link rel="import" href="../bower_components/polymer/lib/elements/dom-repeat.html">
 <link rel="import" href="../modules/app-router/app-router.html">
 <link rel="import" href="../modules/app-network-status/app-network-status.html">
+<link rel="import" href="../modules/firebase-mixin/firebase-mixin.html">
 <link rel="import" href="../opts/auth-functions.html">
 <link rel="import" href="../opts/firebase.html">
+<link rel="import" href="../opts/state-manager.html">
 
 <dom-module id="app-shell">
   <template>
@@ -29,6 +31,8 @@
           Object.freeze(this.__routes)
           Object.freeze(this.__shellComponents)
           this.__boundOpenDrawer = this.__openDrawer.bind(this)
+          this.__boundPageLoading = this.__pageLoading.bind(this)
+          this.__boundPageLoaded = this.__pageLoaded.bind(this)
         }
 
         connectedCallback () {
@@ -37,11 +41,15 @@
           this.__setRoutes(router, this.__routes)
           this.__setComponents(router, this.__shellComponents)
           this.addEventListener('open-drawer', this.__boundOpenDrawer)
+          this.addEventListener('page-loading', this.__boundPageLoading)
+          this.addEventListener('page-loaded', this.__boundPageLoaded)
         }
 
         disconnectedCallback () {
           super.disconnectedCallback()
           this.removeEventListener('open-drawer', this.__boundOpenDrawer)
+          this.removeEventListener('page-loading', this.__boundPageLoading)
+          this.removeEventListener('page-loaded', this.__boundPageLoaded)
         }
 
         __setRoutes (router, routes, parentRoute, auth) {
@@ -120,6 +128,18 @@
         __openDrawer () {
           if (this.__drawer && this.__drawer.openDrawer) {
             this.__drawer.openDrawer()
+          }
+        }
+
+        __pageLoading () {
+          if (this.__header && this.__header.pageLoading) {
+            this.__header.pageLoading()
+          }
+        }
+
+        __pageLoaded () {
+          if (this.__header && this.__header.pageLoaded) {
+            this.__header.pageLoaded()
           }
         }
        }
