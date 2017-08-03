@@ -214,7 +214,8 @@
               if (exec) {
                 patternMatched = pattern
                 namedMatches = {}
-                for (var j in keys) {
+                console.log(exec)
+                for (var j = 0; j < keys.length; j++ ) {
                   namedMatches[keys[j].name] = exec[j + 1]
                 }
                 break
@@ -419,6 +420,11 @@
 
           this.__currentRoute = this.__newRoute
 
+          newView.element._setProperty('params', this.params)
+          newView.element._setProperty('queryParams', this.queryParams)
+          
+          console.log(newView.element.params)
+          
           if (newView && newView.element && newView.element.loadView && typeof newView.element.loadView === 'function') {
             newView.element.loadView(data)
           }
