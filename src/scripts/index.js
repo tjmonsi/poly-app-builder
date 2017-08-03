@@ -1,1 +1,1 @@
-console.log('index root loaded')
+// put other index scripts here

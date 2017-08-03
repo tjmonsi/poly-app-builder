@@ -48,17 +48,25 @@ gulp.task('generate-sw', (done) => {
     const router = new workbox.routing.Router()
     var app = JSON.parse('${JSON.stringify(config.app)}')
     var random = "${new Date().toString()}"
-    importScripts("routing-sw.js")`
+    importScripts("routing-sw.js")
+    importScripts("routing-sw-src.js")`
 
   fs.writeFileSync(
     `${destinationFolder()}/build/workbox-routing.v1.1.0.js`,
     fs.readFileSync(`node_modules/workbox-routing/build/importScripts/workbox-routing.${buildName() === 'prod' ? 'prod' : 'dev'}.v1.1.0.js`,
     'utf8'), 'utf8')
+
   fs.writeFileSync(
     `${destinationFolder()}/build/routing-sw.js`,
     fs.readFileSync('core/service-worker/routing.js',
     'utf8'), 'utf8')
-  fs.writeFileSync(`${destinationFolder()}/build/service-worker.js`, str, 'utf8')
+
+  fs.writeFileSync(
+    `${destinationFolder()}/build/routing-sw-src.js`,
+    fs.readFileSync('src/service-worker/routing.js',
+    'utf8'), 'utf8')
+
+    fs.writeFileSync(`${destinationFolder()}/build/service-worker.js`, str, 'utf8')
 
   done()
 })

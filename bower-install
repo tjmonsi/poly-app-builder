@@ -1,6 +1,13 @@
+#!/bin/bash
 echo installing bower components...
-bower install
+bower install -f
 modules=$(find core/modules -type f -name "bower.json" -not -path "*node_modules*" -not -path "*bower_components*")
+for module in $modules; do
+  pushd $(dirname $module)
+  bower install --allow-root
+  popd
+done
+modules=$(find src/modules -type f -name "bower.json" -not -path "*node_modules*" -not -path "*bower_components*")
 for module in $modules; do
   pushd $(dirname $module)
   bower install --allow-root

@@ -9,8 +9,8 @@
     "test": "xvfb-run polymer test --skip-plugin sauce",
     "bower": "./bower-install.bash",
     "start": "",
-    "serve": "polymer serve dist/public",
-    "serve-c9": "polymer serve dist/public -p $PORT -H $IP",
+    "serve": "firebase serve",
+    "serve-c9": "firebase serve -p $PORT -o $IP",
     "build": "export NODE_ENV=production && gulp build"
   },
   "dependencies": {
@@ -30,6 +30,7 @@
     "gulp-hb": "^6.0.2",
     "gulp-html-minifier": "^0.1.8",
     "gulp-if": "^2.0.2",
+    "gulp-rename": "^1.2.2",
     "gulp-uglify": "^3.0.0",
     "html-brunch-static": "^1.3.2",
     "inquirer": "^3.2.1",

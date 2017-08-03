@@ -1,6 +1,6 @@
-for (var i in app.firebaseId) {
+for (var i in app.firebaseConfig) {
   router.registerRoute({route: new workbox.routing.ExpressRoute({
-    path: 'https://' + app.firebaseId[i] + '.firebaseio.com/:json+',
+    path: 'https://' + app.firebaseConfig[i].projectId + '.firebaseio.com/:json+',
     handler: function (obj) {
       var event = obj.event
       var params = obj.params

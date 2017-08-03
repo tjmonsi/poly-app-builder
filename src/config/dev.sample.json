@@ -67,5 +67,13 @@
   "serviceWorker": {
     "globIgnores": [],
     "runtimeCaching": []
+  },
+  "hosting": {
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

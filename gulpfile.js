@@ -15,7 +15,8 @@ const tasks = [
   'polymer-build',
   'browserify',
   'compile-sass',
-  'copy-images'
+  'copy-images',
+  'bower-install'
 ]
 
 const compilerTasks = []
@@ -70,7 +71,7 @@ const watchers = [
 
 for (var i in tasks) {
   require(`./core/gulp/tasks/${tasks[i]}`)
-  if (tasks[i] !== 'clean-build' && tasks[i] !== 'generate-sw' && tasks[i] !== 'polymer-build') {
+  if (tasks[i] !== 'clean-build' && tasks[i] !== 'generate-sw' && tasks[i] !== 'polymer-build' && tasks[i] !== 'bower-install') {
     compilerTasks.push(tasks[i])
   }
 }
@@ -97,18 +98,19 @@ const generateSW = (done) => {
 const checkDevJson = (done) => {
   if (!fs.existsSync(`src/${buildConfigFile()}`)) {
     console.log('copying from dev.sample.json in src/config')
-    try {
-      fs.writeFileSync(`src/${buildConfigFile()}`, JSON.stringify(JSON.parse(fs.readFileSync('src/config/dev.sample.json', 'utf8'), null, 2)), 'utf8')
-    } catch (e)
-
+    fs.writeFileSync(`src/${buildConfigFile()}`, JSON.stringify(JSON.parse(fs.readFileSync('src/config/dev.sample.json', 'utf8'), null, 2)), 'utf8')
   }
   done()
-
 }
 
-const series = gulp.series(checkDevJson ,'clean-build', createFolder, gulp.parallel(compilerTasks))
+const autoCopyProd = (done) => {
+  fs.writeFileSync(`src/config/prod.json`, JSON.stringify(JSON.parse(fs.readFileSync('src/config/dev.json', 'utf8'), null, 2)), 'utf8')
+  done()
+}
+
+const series = gulp.series('clean-build', createFolder, gulp.parallel(compilerTasks))
 const watch = gulp.series('clean-build', createFolder, generateSW, gulp.parallel(watchers.map((w) => (w.name))))
 
-gulp.task('default', gulp.series(series, generateSW))
-gulp.task('watch', watch)
-gulp.task('build', gulp.series(series, 'polymer-build', 'generate-sw'))
+gulp.task('default', gulp.series('bower-install', checkDevJson, series, generateSW))
+gulp.task('watch', gulp.series('bower-install', watch))
+gulp.task('build', gulp.series(autoCopyProd, series, 'polymer-build', 'generate-sw'))
