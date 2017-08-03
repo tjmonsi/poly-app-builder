@@ -21,7 +21,9 @@
     "default-theme": true,
     "project-layout": true,
     "project-icons": true,
-    "user-data": true
+    "user-data": true,
+    "permission-data": true,
+    "example-pages": true
   },
   "theme": {
     "src": "core/modules/default-theme",
@@ -32,13 +34,14 @@
     "not-found-page": "modules/not-found-page/pages/not-found-page.html",
     "not-authorized-page": "modules/not-authorized-page/pages/not-authorized-page.html",
     "project-app-header": "modules/project-layout/components/project-app-header.html",
-    "project-app-drawer": "modules/project-layout/components/project-app-drawer.html"
+    "project-app-drawer": "modules/project-layout/components/project-app-drawer.html",
+    "second-page-page": "modules/example-pages/pages/second-page-page.html"
   },
   "routing": {
     "/": {
       "node": "home-page"
     },
-    "/p/:id/:id2": "home-page-2"
+    "/p/:id": "second-page-page"
   },
   "httpCodes": {
     "not-found": "not-found-page",
