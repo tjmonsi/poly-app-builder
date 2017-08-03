@@ -35,3 +35,5 @@ build
 prod_temp
 dev.json
 prod.json
+
+.firebaserc

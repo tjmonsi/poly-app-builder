@@ -1,5 +1,0 @@
-{
-  "routing": {
-    "/activities": "pages/activity-page/activity-page.html"
-  }
-}
