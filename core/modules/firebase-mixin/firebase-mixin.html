@@ -674,6 +674,7 @@
           // db.getIndexes().then((result) => {
           //   console.log(result)
           // })
+          
 
           db.find(find).then((result) => {
             var data
@@ -706,7 +707,12 @@
               data.reverse()
             }
 
-            this.__setValue(name, data, readOnly)
+            if (data['$value']) {
+              this.__setValue(name, data.$value, readOnly)  
+            } else {
+              this.__setValue(name, data, readOnly)  
+            }
+            
           }).catch((err) => {
             console.log(err)
             return db.allDocs()
@@ -719,22 +725,39 @@
         }
 
         __updateLocalDB (property, data, firebasePath, del) {
-          const { child } = property
+          const { child, type } = property
           var db = new window.PouchDB('firebasePath_' + firebasePath, {auto_compaction: true})
           if (child) {
-            db.createIndex({
-              index: {
-                fields: [child]
-              }
-            })
+            if (type === String || type === Number || data instanceof String || data instanceof Number) {
+              db.createIndex({
+                index: {
+                  fields: ['$value']
+                }
+              })
+            } else {
+              db.createIndex({
+                index: {
+                  fields: [child]
+                }
+              })  
+            }
+            
           }
           if (!del) {
-            for (var i in data) {
-              db.upsert(i, (doc) => {
-                doc.$key = doc._id || i
-                typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id || i]
+            if (type === String || type === Number || data instanceof String || data instanceof Number) {
+              db.upsert('$value', (doc) => {
+                doc.$key = '$value'
+                doc.value = data
                 return doc
               })
+            } else {
+              for (var i in data) {
+                db.upsert(i, (doc) => {
+                  doc.$key = doc._id || i
+                  typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id || i]
+                  return doc
+                })
+              }  
             }
           } else {
             for (var j in data) {
