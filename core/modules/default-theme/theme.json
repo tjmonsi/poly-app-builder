@@ -41,5 +41,8 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "dependencies": [
+    "../../bower_components/iron-flex-layout/iron-flex-layout.html"
   ]
 }

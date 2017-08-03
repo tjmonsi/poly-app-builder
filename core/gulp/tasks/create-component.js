@@ -29,6 +29,8 @@ gulp.task('create-component', (done) => {
     //   answers.componentName
     // }
 
+    answers.moduleName = answers.moduleName.toLowerCase()
+    answers.componentName = answers.componentName.toLowerCase()
     answers.moduleNameSlug = slugify(answers.moduleName)
     answers.componentNameSlug = slugify(answers.componentName)
 
