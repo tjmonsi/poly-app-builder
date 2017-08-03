@@ -1,5 +1,6 @@
 const gulp = require('gulp')
 const fs = require('fs')
+const inquirer = require('inquirer')
 const {sources, buildConfigFile, destinationFolder} = require('./core/gulp/utils/utils')
 const setupWatchers = require('./core/gulp/utils/setup-watchers')
 const tasks = [
@@ -93,7 +94,19 @@ const generateSW = (done) => {
   done()
 }
 
-const series = gulp.series('clean-build', createFolder, gulp.parallel(compilerTasks))
+const checkDevJson = (done) => {
+  if (!fs.existsSync(`src/${buildConfigFile()}`)) {
+    console.log('copying from dev.sample.json in src/config')
+    try {
+      fs.writeFileSync(`src/${buildConfigFile()}`, JSON.stringify(JSON.parse(fs.readFileSync('src/config/dev.sample.json', 'utf8'), null, 2)), 'utf8')
+    } catch (e)
+
+  }
+  done()
+
+}
+
+const series = gulp.series(checkDevJson ,'clean-build', createFolder, gulp.parallel(compilerTasks))
 const watch = gulp.series('clean-build', createFolder, generateSW, gulp.parallel(watchers.map((w) => (w.name))))
 
 gulp.task('default', gulp.series(series, generateSW))

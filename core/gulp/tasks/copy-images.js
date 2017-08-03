@@ -1,7 +1,7 @@
 const gulp = require('gulp')
-const {destinationFolder} = require('../utils/utils')
+const {destinationFolder, sources} = require('../utils/utils')
 
 gulp.task('copy-images', () => {
-  return gulp.src(['images/**/*.*', 'images/*.*'])
+  return gulp.src(sources.images)
     .pipe(gulp.dest(`${destinationFolder()}/images`))
 })

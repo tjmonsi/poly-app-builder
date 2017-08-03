@@ -31,7 +31,7 @@ gulp.task('create-page', (done) => {
     answers.pageNameSlug = slugify(answers.pageName)
     answers.pageNamePascalCase = uppercamelcase(answers.pageNameSlug)
 
-    var folder = `core/modules/${answers.moduleNameSlug}`
+    var folder = `src/modules/${answers.moduleNameSlug}`
 
     if (!fs.existsSync(folder)) {
       console.log('Module doesn\'t exist. Creating Module')
@@ -55,11 +55,11 @@ gulp.task('create-page', (done) => {
     }
     fs.writeFileSync(`${folder}/pages/${answers.pageNameSlug}-page.html`, template(page)(answers), 'utf8')
 
-    var config = JSON.parse(fs.readFileSync('core/config/dev.json', 'utf8'))
+    var config = JSON.parse(fs.readFileSync('src/config/dev.json', 'utf8'))
     config.modules[answers.moduleNameSlug] = true
     config.fragments[`${answers.pageNameSlug}-page`] = `modules/${answers.moduleNameSlug}/pages/${answers.pageNameSlug}-page.html`
     config.routing[`/test-modules-pages/${answers.pageNameSlug}-page`] = `${answers.pageNameSlug}-page`
-    fs.writeFileSync('core/config/dev.json', JSON.stringify(config, null, 2), 'utf8')
+    fs.writeFileSync('src/config/dev.json', JSON.stringify(config, null, 2), 'utf8')
 
     console.log(`You can check it out at http://localhost:{PORT}/test-modules-pages/${answers.pageNameSlug}-page`)
     return done()

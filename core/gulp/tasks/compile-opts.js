@@ -5,7 +5,7 @@ const correctBowerPath = require('../utils/correct-bower-path')
 const {destinationFolder, sources} = require('../utils/utils.js')
 
 gulp.task('compile-opts', () => {
-  return gulp.src([sources.opts])
+  return gulp.src(sources.opts)
     .pipe(correctBowerPath())
     // .pipe(gulpif((file) => {
     //   return file.path.indexOf('state-manager.html') >= 0 && /\.html$/.test(file.path)

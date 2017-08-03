@@ -5,9 +5,8 @@ const {destinationFolder, buildName} = require('../utils/utils')
 
 gulp.task('browserify', (done) => {
   browserify({
-    entries: ['core/gulp/utils/browser-essentials.js', 'core/scripts/index.js'],
+    entries: ['core/gulp/utils/browser-essentials.js', 'src/scripts/index.js'],
     debug: buildName() === 'prod'
-    // transform: ['loose-envify', { NODE_ENV: 'production' }]
   })
   .transform('loose-envify', {
     _: 'purge',

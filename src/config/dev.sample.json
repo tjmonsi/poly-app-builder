@@ -6,10 +6,21 @@
     "baseHref": "/",
     "analytics": "UA-103026201-1",
     "firebaseVersion": "4.2.0",
-    "firebaseId": [
-      "tjkpm-site-yng"
-    ],
-    "database": "dev"
+    "database": "dev",
+    "firebaseConfig": [
+      {
+        "apiKey": "AIzaSyDdpZgjWiBnIo4B8lPYwUygukV2YfAuiLk",
+        "authDomain": "tjkpm-site-yng.firebaseapp.com",
+        "databaseURL": "https://tjkpm-site-yng.firebaseio.com",
+        "projectId": "tjkpm-site-yng",
+        "storageBucket": "tjkpm-site-yng.appspot.com",
+        "messagingSenderId": "970625793163"
+      }
+    ]
+  },
+  "theme": {
+    "src": "src/modules/default-theme",
+    "ignoreComponents": []
   },
   "modules": {
     "app-router": true,
@@ -25,23 +36,15 @@
     "permission-data": true,
     "example-pages": true
   },
-  "theme": {
-    "src": "core/modules/default-theme",
-    "ignoreComponents": []
-  },
   "fragments": {
     "home-page": "modules/home-page/pages/home-page.html",
     "not-found-page": "modules/not-found-page/pages/not-found-page.html",
     "not-authorized-page": "modules/not-authorized-page/pages/not-authorized-page.html",
     "project-app-header": "modules/project-layout/components/project-app-header.html",
-    "project-app-drawer": "modules/project-layout/components/project-app-drawer.html",
-    "second-page-page": "modules/example-pages/pages/second-page-page.html"
+    "project-app-drawer": "modules/project-layout/components/project-app-drawer.html"
   },
   "routing": {
-    "/": {
-      "node": "home-page"
-    },
-    "/p/:id": "second-page-page"
+    "/": "home-page"
   },
   "httpCodes": {
     "not-found": "not-found-page",
@@ -51,17 +54,16 @@
     "project-app-header": {
       ".order": 0,
       ".header": true,
-      "className": "class-1"
+      "className": "class-1",
+      "activate": true
     },
     "project-app-drawer": {
       ".order": 1,
       ".drawer": true,
-      "className": "drawer"
+      "className": "drawer",
+      "activate": true
     }
   },
-  "reducers": [
-    "modules/user-data/reducers/reducers.html"
-  ],
   "serviceWorker": {
     "globIgnores": [],
     "runtimeCaching": []

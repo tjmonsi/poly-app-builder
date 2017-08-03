@@ -17,7 +17,7 @@ gulp.task('create-module', (done) => {
 
     answers.moduleName = answers.moduleName.toLowerCase()
     answers.moduleNameSlug = slugify(answers.moduleName)
-    var folder = `core/modules/${answers.moduleNameSlug}`
+    var folder = `src/modules/${answers.moduleNameSlug}`
 
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder)
@@ -27,9 +27,9 @@ gulp.task('create-module', (done) => {
 
     fs.writeFileSync(`${folder}/.gitinclude`, '', 'utf8')
 
-    var config = JSON.parse(fs.readFileSync('core/config/dev.json', 'utf8'))
+    var config = JSON.parse(fs.readFileSync('src/config/dev.json', 'utf8'))
     config.modules[answers.moduleNameSlug] = true
-    fs.writeFileSync('core/config/dev.json', JSON.stringify(config, null, 2), 'utf8')
+    fs.writeFileSync('src/config/dev.json', JSON.stringify(config, null, 2), 'utf8')
     return done()
   })
 })

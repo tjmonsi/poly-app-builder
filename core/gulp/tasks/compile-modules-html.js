@@ -6,7 +6,7 @@ const {buildConfig, destinationFolder, sources} = require('../utils/utils.js')
 
 gulp.task('compile-modules-html', () => {
   const config = buildConfig()
-  return gulp.src([sources.modulesHtml])
+  return gulp.src(sources.modulesHtml)
     .pipe(correctBowerPath())
     .pipe(injectSharedStyle())
     .pipe(gulpif((chunk) => {

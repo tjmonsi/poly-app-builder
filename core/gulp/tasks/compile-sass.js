@@ -21,11 +21,11 @@ gulp.task('compile-sass', (done) => {
       fs.mkdirSync(`${destinationFolder()}/modules`)
     }
 
-    if (!fs.existsSync(`${destinationFolder()}/${config.theme.src.replace('core/', '')}`)) {
-      fs.mkdirSync(`${destinationFolder()}/${config.theme.src.replace('core/', '')}`)
+    if (!fs.existsSync(`${destinationFolder()}/${config.theme.src.replace('src/', '')}`)) {
+      fs.mkdirSync(`${destinationFolder()}/${config.theme.src.replace('src/', '')}`)
     }
 
-    fs.writeFileSync(`${destinationFolder()}/${config.theme.src.replace('core/', '')}/${theme.name}-theme.html`, template(themeTemplate)({ themeName: theme.name, style: result.css.toString('utf8'), dependencies: theme.dependencies }), 'utf8')
+    fs.writeFileSync(`${destinationFolder()}/${config.theme.src.replace('src/', '')}/${theme.name}-theme.html`, template(themeTemplate)({ themeName: theme.name, style: result.css.toString('utf8'), dependencies: theme.dependencies }), 'utf8')
     // console.log(result.css.toString('utf8'))
     done()
   })

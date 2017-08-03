@@ -8,7 +8,7 @@ gulp.task('copy-config', (done) => {
     console.log('needs two parameters: gulp copy-config --source source --dest destination')
     return done()
   }
-  fs.writeFileSync(`core/config/${process.argv[dest + 1].replace('.json', '')}.json`, fs.readFileSync(`core/config/${process.argv[source + 1].replace('.json', '')}.json`, 'utf8'))
+  fs.writeFileSync(`src/config/${process.argv[dest + 1].replace('.json', '')}.json`, fs.readFileSync(`src/config/${process.argv[source + 1].replace('.json', '')}.json`, 'utf8'))
   console.log('done')
   done()
 })
