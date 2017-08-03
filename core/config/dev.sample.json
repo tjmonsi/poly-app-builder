@@ -1,0 +1,69 @@
+{
+  "app": {
+    "title": "Polyblog App",
+    "shortTitle": "Polyblog",
+    "description": "Polyblog App System Description",
+    "baseHref": "/",
+    "analytics": "UA-103026201-1",
+    "firebaseVersion": "4.2.0",
+    "firebaseId": [
+      "tjkpm-site-yng"
+    ],
+    "database": "dev"
+  },
+  "modules": {
+    "app-router": true,
+    "app-network-status": true,
+    "firebase-mixin": true,
+    "not-authorized-page": true,
+    "not-found-page": true,
+    "home-page": true,
+    "default-theme": true,
+    "project-layout": true,
+    "project-icons": true,
+    "user-data": true,
+    "permission-data": true,
+    "example-pages": true
+  },
+  "theme": {
+    "src": "core/modules/default-theme",
+    "ignoreComponents": []
+  },
+  "fragments": {
+    "home-page": "modules/home-page/pages/home-page.html",
+    "not-found-page": "modules/not-found-page/pages/not-found-page.html",
+    "not-authorized-page": "modules/not-authorized-page/pages/not-authorized-page.html",
+    "project-app-header": "modules/project-layout/components/project-app-header.html",
+    "project-app-drawer": "modules/project-layout/components/project-app-drawer.html",
+    "second-page-page": "modules/example-pages/pages/second-page-page.html"
+  },
+  "routing": {
+    "/": {
+      "node": "home-page"
+    },
+    "/p/:id": "second-page-page"
+  },
+  "httpCodes": {
+    "not-found": "not-found-page",
+    "not-authorized": "not-authorized-page"
+  },
+  "shellComponents": {
+    "project-app-header": {
+      ".order": 0,
+      ".header": true,
+      "className": "class-1"
+    },
+    "project-app-drawer": {
+      ".order": 1,
+      ".drawer": true,
+      "className": "drawer"
+    }
+  },
+  "reducers": [
+    "modules/user-data/reducers/reducers.html"
+  ],
+  "serviceWorker": {
+    "globIgnores": [],
+    "runtimeCaching": []
+  }
+}
