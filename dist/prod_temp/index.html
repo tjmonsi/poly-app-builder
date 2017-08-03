@@ -74,7 +74,7 @@
       Object.defineProperty(Project, '__database', { value: '' })
 
       // set config variables
-      Object.defineProperty(Project, '__routes', { value: '{"/":{"node":"home-page"},"/p/:id/:id2":"home-page-2","not-found":"not-found-page","not-authorized":"not-authorized-page"}' })
+      Object.defineProperty(Project, '__routes', { value: '{"/":{"node":"home-page"},"/p/:id":"second-page-page","not-found":"not-found-page","not-authorized":"not-authorized-page"}' })
       Object.defineProperty(Project, '__shellComponents', { value: '{"project-app-header":{".order":0,".header":true,"className":"class-1"},"project-app-drawer":{".order":1,".drawer":true,"className":"drawer"}}' })
       Object.defineProperty(Project, 'Reducers', { value: {} })
       Object.defineProperty(Project, 'Actions', { value: {} })
@@ -134,6 +134,7 @@
     <link rel="lazy-import" href="modules/not-authorized-page/pages/not-authorized-page.html" node="not-authorized-page">
     <link rel="lazy-import" href="modules/project-layout/components/project-app-header.html" node="project-app-header">
     <link rel="lazy-import" href="modules/project-layout/components/project-app-drawer.html" node="project-app-drawer">
+    <link rel="lazy-import" href="modules/example-pages/pages/second-page-page.html" node="second-page-page">
   </head>
   <body>
     <script>

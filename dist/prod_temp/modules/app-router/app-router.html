@@ -209,7 +209,7 @@
               if (exec) {
                 patternMatched = pattern
                 namedMatches = {}
-                for (var j in keys) {
+                for (var j = 0; j < keys.length; j++ ) {
                   namedMatches[keys[j].name] = exec[j + 1]
                 }
                 break
@@ -413,7 +413,7 @@
           this.__selectPage(this.__newRoute)
 
           this.__currentRoute = this.__newRoute
-
+          
           if (newView && newView.element && newView.element.loadView && typeof newView.element.loadView === 'function') {
             newView.element.loadView(data)
           }

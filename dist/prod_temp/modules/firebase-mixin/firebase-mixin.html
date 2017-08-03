@@ -58,6 +58,7 @@
           super()
           Object.defineProperty(this, '__refs', { value: {} })
           Object.defineProperty(this, '__properties', { value: {} })
+          Object.defineProperty(this, '__loadedViaRest', { value: {} })
         }
 
         connectedCallback () {
@@ -137,6 +138,8 @@
 
         __updatePropertyData (name) {
           var newPath = this.__computePath(name)
+          if (!newPath) return
+
           const property = this.__properties[name]
 
           var dbPaths = new window.PouchDB('firebasePaths')
@@ -225,6 +228,10 @@
             }
           }
 
+          if (this.__refs[name] && this.__refs[name].ref) {
+            this.__refs[name].ref.off()
+          }
+
           if (type === Array) {
             this.__refs[name] = this.__refs[name] || {
               __onOnce: false,
@@ -233,12 +240,12 @@
               __data: []
             }
 
-            if (this.__refs[name] && this.__refs[name].ref) {
-              this.__refs[name].ref.off()
-            }
-
             // Have to wrap this in async so that the off from the previous run takes effect
             Polymer.Async.microTask.run(() => {
+              if (this.__loadedViaRest[name] && (readOnce || paginated)) {
+                delete this.__loadedViaRest[name]
+                return
+              }
               this.__refs[name].ref = ref
               if (this.__refs[name].ref) {
                 this.__refs[name].__onOnce = true
@@ -253,11 +260,19 @@
               }
             })
           } else {
-            this.__refs[name] = this.__refs[name] || {
-              __data: {}
-            }
-            this.__refs[name].ref = ref
-            this.__refs[name].ref[on]('value', onFirebaseValue, this.__onError, this)
+            Polymer.Async.microTask.run(() => {
+              if (this.__loadedViaRest[name] && (readOnce || paginated)) {
+                delete this.__loadedViaRest[name]
+                return
+              }
+              this.__refs[name] = this.__refs[name] || {
+                __data: {}
+              }
+              this.__refs[name].ref = ref
+              if (this.__refs[name].ref) {
+                this.__refs[name].ref[on]('value', onFirebaseValue, this.__onError, this)
+              }
+            })
           }
         }
 
@@ -358,6 +373,7 @@
                   }
                   Project.__firebaseFetch[ref].value = data
                   this.__setValue(name, data, readOnly)
+                  this.__loadedViaRest[name] = true
                 } else {
                   Project.__firebaseFetch[ref].value = json
                   this.__setValue(name, json, readOnly)
@@ -452,8 +468,10 @@
             this.__updateLocalDB(property, snapshot.val(), firebasePath)
           }
 
+          // console.log(snapshot.val(), snapshot.ref.toString())
+
           if (window.performance && Project.__build !== 'prod') {
-            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + (performance.now() - window.globalStart))
+            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + this.nodeName.toLowerCase() + ' ' + (performance.now() - window.globalStart))
           }
         }
 
@@ -548,7 +566,13 @@
               var newPath = firebasePath
               var pathArray = firebasePath.match(pathMatch)
               while (pathArray.length > 0) {
-                newPath = newPath.replace(pathArray.shift(), args2.shift())
+                var arg = args2.shift()
+                var p = pathArray.shift()
+                if (arg !== null && arg !== undefined) {
+                  newPath = newPath.replace(p, arg)
+                } else {
+                  return
+                }
               }
 
               return newPath

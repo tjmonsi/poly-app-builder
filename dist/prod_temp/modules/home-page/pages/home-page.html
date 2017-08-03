@@ -1,6 +1,7 @@
 <link rel="import" href="../../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../../bower_components/polymer/lib/elements/dom-repeat.html">
-<link rel="import" href="../../firebase-mixin/firebase-mixin.html"><link rel="import" href="./../../default-theme/default-theme.html">
+<link rel="import" href="../../firebase-mixin/firebase-mixin.html">
+<link rel="import" href="../components/component-example.html"><link rel="import" href="./../../default-theme/default-theme.html">
 
 <dom-module id="home-page">
   <template>
@@ -9,6 +10,8 @@
 
     <div class="container">
       Hello there
+
+      <component-example></component-example>
     </div>
 
     <template is="dom-repeat" items="[[test]]">
