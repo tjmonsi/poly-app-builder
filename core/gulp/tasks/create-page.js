@@ -25,6 +25,8 @@ gulp.task('create-page', (done) => {
       answers.moduleName = answers.pageName
     }
 
+    answers.moduleName = answers.moduleName.toLowerCase()
+    answers.pageName = answers.pageName.toLowerCase()
     answers.moduleNameSlug = slugify(answers.moduleName)
     answers.pageNameSlug = slugify(answers.pageName)
     answers.pageNamePascalCase = uppercamelcase(answers.pageNameSlug)

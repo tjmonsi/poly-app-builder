@@ -15,6 +15,7 @@ gulp.task('create-module', (done) => {
       return done()
     }
 
+    answers.moduleName = answers.moduleName.toLowerCase()
     answers.moduleNameSlug = slugify(answers.moduleName)
     var folder = `core/modules/${answers.moduleNameSlug}`
 

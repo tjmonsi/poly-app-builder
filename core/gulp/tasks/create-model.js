@@ -17,7 +17,8 @@ gulp.task('create-model', (done) => {
       return done()
     }
 
-    answers.moduleName = answers.modelName
+    answers.modelName = answers.modelName.toLowerCase()
+    answers.moduleName = answers.modelName.toLowerCase()
     answers.moduleNameSlug = slugify(answers.moduleName)
     answers.modelNameSlug = slugify(answers.modelName)
     answers.modelNamePascalCase = uppercamelcase(answers.modelNameSlug)
