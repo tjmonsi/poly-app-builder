@@ -32,5 +32,4 @@ public/
 bower_components/
 
 build
-public_temp
-public_test
+prod_temp
