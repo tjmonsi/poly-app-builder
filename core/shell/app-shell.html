@@ -18,7 +18,7 @@
         static get is () { return 'app-shell' }
 
         static get properties () {
-          return Project.__utils.__extends({}, super.properties, {})
+          return Project.utils.extends({}, super.properties, {})
         }
 
         constructor () {
@@ -26,6 +26,7 @@
           // if (performance) {
           //   console.log('App shell constructor called: ' + (performance.now() - window.globalStart))
           // }
+          // checker if this was loaded again
           Object.defineProperty(this, '__routes', { value: JSON.parse(window.Project.__routes) })
           Object.defineProperty(this, '__shellComponents', { value: JSON.parse(window.Project.__shellComponents) })
           Object.freeze(this.__routes)
@@ -75,7 +76,7 @@
         __setComponents (content, components) {
           var componentsArray = []
           for (var i in components) {
-            componentsArray.push(Project.__utils.__extends({}, components[i], { node: i }))
+            componentsArray.push(Project.utils.extends({}, components[i], { node: i }))
           }
           componentsArray.sort((p, q) => (p['.order'] - q['.order']))
           for (var j in componentsArray) {

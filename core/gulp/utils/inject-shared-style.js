@@ -17,7 +17,7 @@ const injectSharedStyle = () => {
     if (!file.isDirectory()) {
       var string = file.contents.toString('utf8')
       var document = parse5.parseFragment(string)
-      var fileArray = file.path.replace(process.cwd() + '/core/modules', '').split('/')
+      var fileArray = file.path.replace(process.cwd() + '/src/modules', '').replace(process.cwd() + '/core/modules', '').split('/')
       // var fileName = fileArray.pop()
       fileArray.pop()
       var newFileArray = fileArray.map((directory) => {
@@ -46,7 +46,7 @@ const injectSharedStyle = () => {
                   var link = parse5Utils.createNode('link')
                   link.attrs = parse5Utils.toAttrs({
                     rel: 'import',
-                    href: newFileArray.join('/') + '/' + config.theme.src.replace('core/modules/', '') + '/' + theme.name + '-theme.html'
+                    href: newFileArray.join('/') + '/' + config.theme.src.replace('src/modules/', '').replace('core/modules', '') + '/' + theme.name + '-theme.html'
                   })
 
                   if (style.attrs.length > 0) {

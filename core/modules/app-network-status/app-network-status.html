@@ -17,7 +17,7 @@
       return class extends superClass {
         // add methods of permissions here
         static get properties () {
-          return Project.__utils.__extends({}, super.properties, {
+          return Project.utils.extends({}, super.properties, {
             online: {
               type: Boolean,
               readOnly: true,

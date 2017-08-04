@@ -10,11 +10,11 @@
     const setState = (newState) => {
       if (action.appName) {
         var newApps = {}
-        newApps[action.appName] = Project.__utils.__extends({}, state.apps[action.appName], newState)
-        obj = { apps: Project.__utils.__extends({}, state.apps, newApps) }
-        return Project.__utils.__extends({}, state, obj)
+        newApps[action.appName] = Project.utils.extends({}, state.apps[action.appName], newState)
+        obj = { apps: Project.utils.extends({}, state.apps, newApps) }
+        return Project.utils.extends({}, state, obj)
       }
-      return Project.__utils.__extends({}, state, { default: Project.__utils.__extends({}, state.default, newState) })
+      return Project.utils.extends({}, state, { default: Project.utils.extends({}, state.default, newState) })
     }
 
     switch (action.type) {

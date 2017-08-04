@@ -2,7 +2,7 @@ const gulp = require('gulp')
 const sass = require('node-sass')
 const fs = require('fs')
 const { template } = require('lodash')
-const {buildName, buildConfig, themeConfig, destinationFolder} = require('../utils/utils')
+const {buildConfig, themeConfig, destinationFolder} = require('../utils/utils')
 
 gulp.task('compile-sass', (done) => {
   var config = buildConfig()

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="{{app.title}}">
+    <meta name="viewport" content="width=device-width, minimum-scale = 1.0, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=no">
+
+    <title>{{app.title}}</title>
+    <meta name="description" content="{{app.description}}">
+
+    <!--
+      If deploying to a non-root path, replace href="/" with the full path to the project root.
+      For example: href="/polymer-starter-kit/relative-path-example/"
+    -->
+    <base href="{{app.baseHref}}">
+
+    <link rel="icon" href="images/favicon.ico">
+
+    <!-- See https://goo.gl/OOhYW5 -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- See https://goo.gl/qRE0vM -->
+    <meta name="theme-color" content="{{theme.themeColor}}">
+
+    <!-- Add to homescreen for Chrome on Android. Fallback for manifest.json -->
+    <meta name="mobile-web-app-capable" content="{{theme.webApp.capable}}">
+    <meta name="application-name" content="{{app.title}}">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="{{theme.webApp.capable}}">
+    <meta name="apple-mobile-web-app-status-bar-style" content="{{theme.webApp.statusBarStyle}}">
+    <meta name="apple-mobile-web-app-title" content="{{app.title}}">
+
+    <!-- Homescreen icons -->
+    {{#each theme.icons}}
+    <link rel="apple-touch-icon"{{#if sizes}} sizes="{{sizes}}"{{/if}} href="images/manifest/{{href}}">
+    {{/each}}
+
+    <!-- Tile icon for Windows 8 (144x144 + tile color) -->
+    {{#each theme.icons}}
+    {{#if tileImage}}
+    <meta name="msapplication-TileImage" content="images/manifest/{{href}}">
+    {{/if}}
+    {{/each}}
+    <meta name="msapplication-TileColor" content="{{theme.themeColor}}">
+    <meta name="msapplication-tap-highlight" content="{{theme.webApp.tapHighlight}}">
+    <script>
+      // set project namespace
+      Object.defineProperty(window, 'Project', { value: window.Project || {} })
+      Object.defineProperty(Project, 'Mixins', { value: Project.Mixins || {} })
+      Object.defineProperty(Project, 'utils', { value: Project.utils || {} })
+      Object.defineProperty(Project.utils, 'extends', { value: Project.utils.extends || Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key] } } } return target } })
+      /**
+       * Merges a property's object value using the defaults way.
+       *
+       * @private
+       * @param {Object} what Initial prototype
+       * @param {String} which Property to collect.
+       * @return {Object} the collected values
+       */
+      Object.defineProperty(Project.utils, 'collect', { value: Project.utils.collect || function (what, which) {
+        var res = {}
+        while (what) {
+          res = Project.utils.extends({}, what[which], res) // Respect prototype priority
+          what = Object.getPrototypeOf(what)
+        }
+        return res
+      }})
+      Object.defineProperty(Project.utils, 'isEmpty', { value: Project.utils.isEmpty || function (obj) {
+        for (var key in obj) {
+          if (obj.hasOwnProperty(key)) return false
+        }
+        return true
+      }})
+      Object.defineProperty(Project, '__firebaseFetch', { value: Project.__firebaseFetch || {} })
+      Object.defineProperty(Project, '__firebaseVersion', { value: Project.__firebaseVersion || '{{app.firebaseVersion}}' })
+
+      // set project build
+      Object.defineProperty(Project, '__build', { value: Project.__build || '{{build}}' })
+      Object.defineProperty(Project, '__version', { value: Project.__version || '{{version}}' })
+      Object.defineProperty(Project, '__database', { value: Project.__database || '{{dtabase}}' })
+
+      // set config variables
+      Object.defineProperty(Project, '__routes', { value: Project.__routes || '{{#compileRouting}}{{/compileRouting}}' })
+      Object.defineProperty(Project, '__shellComponents', { value: Project.__shellComponents || '{{#compileShellComponents}}{{/compileShellComponents}}' })
+      Object.defineProperty(Project, 'Reducers', { value: Project.Reducers || {} })
+      Object.defineProperty(Project, 'Actions', { value: Project.Actions || {} })
+
+      if (window.performance) {
+        window.globalStart = window.globalStart || performance.now()
+      }
+
+      window.onerror = (err, url, line) => {
+        console.error(err)
+        try {
+          if (window.ga) {
+            ga('send', 'exception', {
+              exDescription: err.message,
+              exFatal: true
+            })
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      // Register the base URL
+      window.Project.baseUrl = window.Project.baseUrl || document.querySelector('base').href
+
+      // Load and register pre-caching Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register(window.Project.baseUrl + 'service-worker.js').then(() => {
+            if (navigator.serviceWorker.controller) {
+              console.log('The service worker is currently handling network operations.')
+            } else {
+              console.log('Please reload this page to allow the service worker to handle network operations.')
+            }
+          })
+        });
+      }
+    </script>
+
+    <!-- Load webcomponents-loader.js to check and load any polyfills your browser needs -->
+    <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+
+    <!-- Load your application shell -->
+    <link rel="import" href="script.html">
+    <link rel="import" href="shell/app-shell.html">
+    <link rel="import" href="default.html">
+    <link rel="import" href="default2.html">
+
+
+    <!-- Add any global styles for body, document, etc. -->
+    <style>
+      {{css}}
+    </style>
+
+    <!-- Add all lazy-imports here -->
+    {{#each fragments}}
+    <link rel="lazy-import" href="{{this}}" node="{{@key}}">
+    {{/each}}
+  </head>
+  <body>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', '{{app.analytics}}', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+    <script>
+      if (window.__shellHasBeenLoaded) {
+        document.head.querySelectorAll('link[rel="import"]').forEach(link => {
+          if (link.import && link.import.body && link.import.body.querySelector('app-shell')) {
+            link.import.body.querySelector('app-shell').remove()
+            console.log(link.import.body.querySelector('app-shell'))
+            link.remove()
+          }
+        })
+        throw Error(new Error('This file doesn`t exist'))
+      }
+      Object.defineProperty(window, '__shellHasBeenLoaded', { value: window.__shellHasBeenLoaded || true })
+    </script>
+
+    <app-shell></app-shell>
+    <noscript>
+      Please enable JavaScript to view this website.
+    </noscript>
+    <!-- Built with love using Polymer Starter Kit -->
+
+  </body>
+</html>

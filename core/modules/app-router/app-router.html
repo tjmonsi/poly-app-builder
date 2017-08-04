@@ -180,9 +180,12 @@
          *  and also updates the currentView's params and queryParams attributes
          */
         __updateCurrentViewData () {
-          if (this.__currentRoute && this.__routes[this.__currentRoute] && this.__routes[this.__currentRoute].element) {
-            this.__routes[this.__currentRoute].element.set('params', this.params || {})
-            this.__routes[this.__currentRoute].element.set('queryParams', this.queryParams || {})
+          if (this.__currentRoute &&
+            this.__routes[this.__currentRoute] &&
+            this.__routes[this.__currentRoute].element &&
+            typeof this.__routes[this.__currentRoute].element._setProperty === 'function') {
+            this.__routes[this.__currentRoute].element._setProperty('params', this.params || {})
+            this.__routes[this.__currentRoute].element._setProperty('queryParams', this.queryParams || {})
           }
         }
 
@@ -357,7 +360,7 @@
               var link = this.__lazyImportArea.querySelector(`link[rel='lazy-import'][node='${newView.element.nodeName.toLowerCase()}']`)
               if (link) {
                 if (link.hasAttribute('href')) {
-                  Polymer.importHref(link.getAttribute('href'), (event) => {
+                  Polymer.importHref(Project.baseUrl + link.getAttribute('href'), (event) => {
                     resolve(newView.element.nodeName.toLowerCase(), event)
                   }, (error) => {
                     reject(new Error(`No file found: ${link.getAttribute('href')}`, {
@@ -413,12 +416,19 @@
               exFatal: false
             })
             console.error(err)
+            if (this.__newRoute !== 'not-found') {
+              this.__newRoute = 'not-found'
+              this.params = {
+                error: err.message
+              }
+              this.__loadView()
+            }
           }
 
           this.__selectPage(this.__newRoute)
 
           this.__currentRoute = this.__newRoute
-          
+
           if (newView && newView.element && newView.element.loadView && typeof newView.element.loadView === 'function') {
             newView.element.loadView(data)
           }

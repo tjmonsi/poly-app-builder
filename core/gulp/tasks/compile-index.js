@@ -1,4 +1,5 @@
 const gulp = require('gulp')
+const rename = require('gulp-rename')
 const hb = require('gulp-hb')
 const sass = require('node-sass')
 const {getVersion, buildName, buildConfig, destinationFolder, sources} = require('../utils/utils')
@@ -21,5 +22,8 @@ gulp.task('compile-index', () => {
   })
   return gulp.src(sources.index)
     .pipe(hbStream)
+    .pipe(rename(function (path) {
+      path.extname = '.html'
+    }))
     .pipe(gulp.dest(destinationFolder()))
 })

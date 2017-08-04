@@ -1,6 +1,5 @@
 <script>
   // Initialize any Firebase configs
-  Object.defineProperty(Project, '__firebaseConfig', { value: <%= JSON.stringify(firebaseConfig)%> })
-
+  Object.defineProperty(Project, '__firebaseConfig', { value: <%= JSON.stringify(app.firebaseConfig)%> })
   Object.freeze(Project.__firebaseConfig)
 </script>

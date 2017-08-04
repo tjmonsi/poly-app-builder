@@ -57,7 +57,7 @@
               notify: true
             }
           }
-          return Project.__utils.__extends({}, super.properties, properties)
+          return Project.utils.extends({}, super.properties, properties)
         }
 
         constructor () {
@@ -239,7 +239,7 @@
           var db = new window.PouchDB('firebaseAuths', { auto_compaction: true })
           db.get('currentSession').then((doc) => {
             if ((this.user && !this.user.uid) || !this.user) {
-              this._setProperty('user', Project.__utils.__extends({}, this.user, { uid: doc.uid }))
+              this._setProperty('user', Project.utils.extends({}, this.user, { uid: doc.uid }))
             }
           }).catch((err) => {
             if (err.name !== 'not_found') {

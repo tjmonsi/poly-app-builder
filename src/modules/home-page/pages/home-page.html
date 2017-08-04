@@ -9,15 +9,16 @@
     </style>
 
     <div class="container">
-      Hello there
+      Hello there [[params.id]]
 
       <component-example></component-example>
     </div>
 
     <template is="dom-repeat" items="[[test]]">
+      test
       [[item.name]]:[[item.value]]<br/>
     </template>
-
+    Hello
     <template is="dom-repeat" items="[[test2]]">
       [[item.val]]
     </template>
@@ -29,6 +30,10 @@
 
         static get properties () {
           return {
+            params: {
+              type: Object,
+              readOnly: true
+            },
             test: {
               type: Array,
               firebasePath: '[[key]]/[[key2.val]]',

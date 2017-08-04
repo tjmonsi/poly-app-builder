@@ -18,7 +18,8 @@
   "dependencies": {
     "polymer": "Polymer/polymer#^2.0.1",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1",
-    "polymer-redux": "^1.0.1"
+    "polymer-redux": "^1.0.1",
+    "s-utils": "StartPolymer/s-utils#^0.2.4"
   },
   "devDependencies": {
     "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1",

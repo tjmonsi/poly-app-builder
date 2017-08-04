@@ -23,9 +23,6 @@
     "ignoreComponents": []
   },
   "modules": {
-    "app-router": true,
-    "app-network-status": true,
-    "firebase-mixin": true,
     "not-authorized-page": true,
     "not-found-page": true,
     "home-page": true,

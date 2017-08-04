@@ -1,12 +1,13 @@
 <link rel="import" href="pouchdb.html">
 <link rel="import" href="../../../bower_components/polymer/lib/utils/async.html">
+<link rel="import" href="../../../bower_components/polymer/lib/utils/render-status.html">
 
 <script>
   (() => {
     const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
 
     const propertyListeners = (element, name, firebasePath, property) => {
-      element.__properties[name] = Project.__utils.__extends({}, property, { firebasePath })
+      element.__properties[name] = Project.utils.extends({}, property, { firebasePath })
       var { args } = element.__gettingArgs(firebasePath, element)
       var methodName = `__updatePropertyData("${name}", ${args.join(', ')})`
       element._createMethodObserver(methodName)
@@ -23,6 +24,7 @@
           doc.paths = []
           return doc
         })
+
         propertyListeners(element, name, firebasePath, properties[name])
       })
     }
@@ -36,7 +38,6 @@
           }
           return false
         })
-
       return update(element, bindings, properties)
     }
 
@@ -59,21 +60,25 @@
           Object.defineProperty(this, '__refs', { value: {} })
           Object.defineProperty(this, '__properties', { value: {} })
           Object.defineProperty(this, '__loadedViaRest', { value: {} })
+          this.__boundUpdateData = this.__firebaseInitialized.bind(this)
         }
 
         connectedCallback () {
           super.connectedCallback()
           var startTime
-          const properties = Project.__utils.__collect(this.constructor, 'properties')
+          const properties = Project.utils.collect(this.constructor, 'properties')
           if (window.performance && Project.__build !== 'prod') {
-            console.log('Firebase Mixin: Binding Property: ' + this.nodeName.toLowerCase() + ' ' + (performance.now() - window.globalStart))
+            console.log(`Firebase Mixin: Bind Props: ${this.nodeName.toLowerCase()}, ${this.getAttribute('route')}, ${(performance.now() - window.globalStart)}`)
           }
           bind(this, properties, startTime)
+
+          window.addEventListener('firebase-app-initialized', this.__boundUpdateData)
         }
 
         disconnectedCallback () {
           super.disconnectedCallback()
           unbind(this)
+          window.removeEventListener('firebase-app-initialized', this.__boundUpdateData)
         }
 
         updatePropertyPath (name, newPath) {
@@ -115,7 +120,7 @@
             obj.limitToLast = null
           }
 
-          this.__properties[name] = Project.__utils.__extends({}, this.__properties[name], obj, query, { firebasePath })
+          this.__properties[name] = Project.utils.extends({}, this.__properties[name], obj, query, { firebasePath })
           propertyListeners(this, name, this.__properties[name].firebasePath, this.__properties[name])
         }
 
@@ -129,10 +134,18 @@
           }
         }
 
+        __firebaseInitialized (e) {
+          Polymer.RenderStatus.afterNextRender(this, () => {
+            setTimeout(() => {
+              this.updateData()
+            }, 500)
+          })
+        }
+
         __gettingArgs (firebasePath, element) {
           var attrs = firebasePath.match(pathMatch)
-          var args = attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, '')))
-          var args2 = args.map(arg => element.get(arg))
+          var args = attrs ? attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, ''))) : []
+          var args2 = args ? args.map(arg => element.get(arg)) : []
           return { args, args2 }
         }
 
@@ -142,7 +155,7 @@
 
           const property = this.__properties[name]
 
-          var dbPaths = new window.PouchDB('firebasePaths')
+          var dbPaths = new window.PouchDB('firebasePaths', {auto_compaction: true})
           dbPaths.upsert(property.firebasePath, (doc) => {
             if (!(doc.paths instanceof Array)) {
               doc.paths = []
@@ -152,9 +165,6 @@
           })
 
           this.__getLocalDB(name, property, newPath)
-          if (window.performance && Project.__build !== 'prod') {
-            console.log('Firebase Mixin: LocalDB: variable ' + name + ' ' + (performance.now() - window.globalStart))
-          }
 
           if (window.firebase) {
             this.__fetchDataViaFirebase(name, newPath, property)
@@ -181,27 +191,25 @@
             appName
           } = property
 
-          const onFirebaseValue = (snapshot) => {
+          var onFirebaseValue = (snapshot) => {
             this.__onFirebaseValue(snapshot, name, property, firebasePath)
           }
 
-          const onFirebaseChildAdded = (snapshot, previousChildKey) => {
+          var onFirebaseChildAdded = (snapshot, previousChildKey) => {
             this.__onFirebaseChildAdded(snapshot, previousChildKey, name, property, firebasePath)
           }
 
-          const onFirebaseChildChanged = (snapshot) => {
+          var onFirebaseChildChanged = (snapshot) => {
             this.__onFirebaseChildChanged(snapshot, name, property, firebasePath)
           }
 
-          const onFirebaseChildMoved = (snapshot, previousChildKey) => {
+          var onFirebaseChildMoved = (snapshot, previousChildKey) => {
             this.__onFirebaseChildMoved(snapshot, previousChildKey, name, property)
           }
 
-          const onFirebaseChildRemoved = (snapshot) => {
+          var onFirebaseChildRemoved = (snapshot) => {
             this.__onFirebaseChildRemoved(snapshot, name, property, firebasePath)
           }
-
-          // console.log(firebasePath)
 
           var app = appName == null ? firebase.app() : firebase.app(appName)
 
@@ -230,6 +238,11 @@
 
           if (this.__refs[name] && this.__refs[name].ref) {
             this.__refs[name].ref.off()
+            // this.__refs[name].ref.off('value', onFirebaseValue)
+            // this.__refs[name].ref.off('child_added', onFirebaseChildAdded)
+            // this.__refs[name].ref.off('child_removed', onFirebaseChildRemoved)
+            // this.__refs[name].ref.off('child_changed', onFirebaseChildChanged)
+            // this.__refs[name].ref.off('child_moved', onFirebaseChildMoved)
           }
 
           if (type === Array) {
@@ -317,14 +330,16 @@
           ref = ref + queryParams.join('&')
           var flag = true
 
-          // console.log(ref)
-
           if (Project.__firebaseFetch[ref]) {
             var fetcher = Project.__firebaseFetch[ref]
 
             if (new Date() - fetcher.time <= 1000) {
               flag = false
-              this.__setValue(name, fetcher.value, readOnly)
+              if (fetcher.value) {
+                this.__setValue(name, fetcher.value, readOnly)
+              } else {
+                flag = true
+              }
             }
           }
 
@@ -336,7 +351,7 @@
             fetch(ref)
               .then((response) => {
                 if (window.performance && Project.__build !== 'prod') {
-                  console.log('Firebase Mixin: REST: variable ' + name + ' ' + (performance.now() - window.globalStart))
+                  console.log(`Firebase Mixin: REST: ${name}, ${this.nodeName.toLowerCase()}, ${this.getAttribute('route')}, ${(performance.now() - window.globalStart)}`)
                 }
                 return response.json()
               })
@@ -411,9 +426,8 @@
                 }
               }
               if (window.performance && Project.__build !== 'prod') {
-                console.log('Firebase Mixin: Apps Initialized: ' + (performance.now() - window.globalStart))
+                console.log(`Firebase Mixin: Apps initialized: ${name}, ${this.nodeName.toLowerCase()}, ${this.getAttribute('route')}, ${(performance.now() - window.globalStart)}`)
               }
-              this.__fetchDataViaFirebase(name, firebasePath, property)
             }
             if (!document.head.querySelector(`#firebase-script`)) {
               t.parentNode.insertBefore(script, t)
@@ -423,6 +437,9 @@
 
         __onFirebaseValue (snapshot, name, property, firebasePath) {
           const { type, desc, paginated, readOnly, child, orderBy } = property
+          // if (this.getAttribute('route') === '/p/:id') {
+          //   debugger
+          // }
           if (type === Array) {
             var data = paginated ? this[name] || [] : []
             if (snapshot.hasChildren()) {
@@ -458,9 +475,14 @@
             if (desc) {
               data.reverse()
             }
-            this.__setValue(name, data, readOnly)
-            this.notifySplices(name)
 
+
+            Polymer.Async.microTask.run(() => {
+              console.log(name, this.getAttribute('route'), data, firebasePath)
+              this.__setValue(name, data, readOnly)
+              this.notifySplices(name)
+              this.notifyPath(name)
+            })
             this.__refs[name].__initialLoadDone = true
             this.__refs[name].ref.off('value')
           } else {
@@ -468,10 +490,8 @@
             this.__updateLocalDB(property, snapshot.val(), firebasePath)
           }
 
-          // console.log(snapshot.val(), snapshot.ref.toString())
-
           if (window.performance && Project.__build !== 'prod') {
-            console.log('Firebase Mixin: SDK onvalue: variable: ' + name + ' ' + this.nodeName.toLowerCase() + ' ' + (performance.now() - window.globalStart))
+            console.log(`Firebase Mixin: SDK onvalue: ${name}, ${this.nodeName.toLowerCase()}, ${this.getAttribute('route')}, ${(performance.now() - window.globalStart)}`)
           }
         }
 
@@ -483,6 +503,13 @@
             var previousChildIndex = this.__indexFromKey(this[name], previousChildKey)
             value = this.__snapshotToValue(snapshot)
             this.__refs[name].__map[key] = value
+
+            for (var i in this[name]) {
+              if (this[name][i].$key === value.$key) {
+                return
+              }
+            }
+
             if (desc) {
               this.splice(name, previousChildIndex < 0 ? this[name].length : previousChildIndex, 0, value)
             } else {
@@ -565,13 +592,15 @@
             if (typeof firebasePath === 'string') {
               var newPath = firebasePath
               var pathArray = firebasePath.match(pathMatch)
-              while (pathArray.length > 0) {
-                var arg = args2.shift()
-                var p = pathArray.shift()
-                if (arg !== null && arg !== undefined) {
-                  newPath = newPath.replace(p, arg)
-                } else {
-                  return
+              if (pathArray) {
+                while (pathArray.length > 0) {
+                  var arg = args2.shift()
+                  var p = pathArray.shift()
+                  if (arg !== null && arg !== undefined) {
+                    newPath = newPath.replace(p, arg)
+                  } else {
+                    return
+                  }
                 }
               }
 
@@ -619,16 +648,6 @@
 
           const find = {}
 
-          // if (child) {
-          //   db.createIndex({
-          //     index: {
-          //       fields: [child]
-          //     }
-          //   }).then((result) => {
-          //     console.log(result)
-          //   })
-          // }
-
           if (orderBy === 'child' && child) {
             find.sort = [child]
           } else if (orderBy === 'value') {
@@ -647,7 +666,7 @@
           }
 
           if (endAt) {
-            find.selector[find.sort[0]] = Project.__extends({}, find.selector[find.sort[0]], {
+            find.selector[find.sort[0]] = Project.extends({}, find.selector[find.sort[0]], {
               $lte: endAt
             })
           }
@@ -669,25 +688,28 @@
             descObj[find.sort[0]] = 'desc'
             find.sort = [descObj]
           }
-          // find.sort = null
-
-          // db.getIndexes().then((result) => {
-          //   console.log(result)
-          // })
-          
 
           db.find(find).then((result) => {
             var data
             if (type === Array) {
               data = []
               for (var i in result.docs) {
-                data.push(result.docs[i])
+                var flag = true
+                for (var j in data) {
+                  if (data[j].$key === result.docs[i].$key) {
+                    flag = false
+                    break
+                  }
+                }
+                if (flag) {
+                  data.push(result.docs[i])
+                }
               }
               data = this.__sortData(data, orderBy, child)
             } else {
               data = {}
-              for (var j in result.docs) {
-                data[result.docs[j].$key] = result.docs[j].value
+              for (var m in result.docs) {
+                data[result.docs[m].$key] = result.docs[m].value
               }
             }
 
@@ -708,11 +730,14 @@
             }
 
             if (data['$value']) {
-              this.__setValue(name, data.$value, readOnly)  
+              this.__setValue(name, data.$value, readOnly)
             } else {
-              this.__setValue(name, data, readOnly)  
+              this.__setValue(name, data, readOnly)
             }
-            
+
+            if (window.performance && Project.__build !== 'prod') {
+              console.log(`Firebase Mixin: LocalDB: ${name}, ${this.nodeName.toLowerCase()}, ${this.getAttribute('route')}, ${(performance.now() - window.globalStart)}`)
+            }
           }).catch((err) => {
             console.log(err)
             return db.allDocs()
@@ -739,9 +764,8 @@
                 index: {
                   fields: [child]
                 }
-              })  
+              })
             }
-            
           }
           if (!del) {
             if (type === String || type === Number || data instanceof String || data instanceof Number) {
@@ -754,10 +778,10 @@
               for (var i in data) {
                 db.upsert(i, (doc) => {
                   doc.$key = doc._id || i
-                  typeof data[doc._id] === 'object' ? doc = Project.__utils.__extends({}, doc, data[doc._id]) : doc.value = data[doc._id || i]
+                  typeof data[doc._id] === 'object' ? doc = Project.utils.extends({}, doc, data[doc._id]) : doc.value = data[doc._id || i]
                   return doc
                 })
-              }  
+              }
             }
           } else {
             for (var j in data) {
@@ -797,6 +821,7 @@
           } else {
             this.set(name, value)
           }
+          Polymer.RenderStatus.flush()
         }
 
         __onError (err) {
