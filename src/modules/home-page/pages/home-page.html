@@ -38,12 +38,12 @@
             }, i * 1000)
           }
           setTimeout(() => {
-            // this.deleteProperties()
-          }, 15000)
+            this.deleteProperties(i + 1)
+          }, (i + 1) * 1000)
         }
 
-        deleteProperties () {
-          for (var i = 0; i < 11; i++) {
+        deleteProperties (num) {
+          for (var i = 0; i < num; i++) {
             setTimeout(() => {
               this.shadowRoot.querySelector('firebase-property-example').remove()
             }, i * 1000)

@@ -1,31 +1,176 @@
 <link rel="import" href="../scripts/pouchdb.html">
 <link rel="import" href="../../../../bower_components/polymer/lib/utils/async.html">
 
-<script src="https://www.gstatic.com/firebasejs/4.2.0/firebase.js"></script>
-<script>
-  // Initialize Firebase
-  var config = {
-    apiKey: 'AIzaSyDdpZgjWiBnIo4B8lPYwUygukV2YfAuiLk',
-    authDomain: 'tjkpm-site-yng.firebaseapp.com',
-    databaseURL: 'https://tjkpm-site-yng.firebaseio.com',
-    projectId: 'tjkpm-site-yng',
-    storageBucket: 'tjkpm-site-yng.appspot.com',
-    messagingSenderId: '970625793163'
-  }
-  window.firebase.initializeApp(config)
-</script>
 <script>
   (() => {
     const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
+    const localDbPathPrefix = 'firebasePath_'
+    const staleTime = (window.Project.__dataRestStaleTime * 1000) || 60000
     const __firebaseRefs = {}
     const __elementProps = {}
+    const __firebaseRest = {}
+    const __openedDbs = {}
+    const firebaseAuthPaths = new window.PouchDB('firebaseAuthPaths', {auto_compaction: true})
+    const __debugOffline = false
 
-    window.addEventListener('firebase-app-initialized', () => {
-      console.log('setting event listeners on firebase')
-      for (var i in __firebaseRefs) {
-        setFirebaseEvents(i)
+    if (!window.firebase) {
+      const src = `https://www.gstatic.com/firebasejs/${Project.__firebaseVersion || '4.1.4'}/firebase.js`
+      var script = document.createElement('script')
+      var t = document.getElementsByTagName('script')[0]
+      script.type = 'text/javascript'
+      script.id = 'firebase-script'
+      script.src = src
+      script.onload = script.onreadstatechange = () => {
+        var defaultFlag = null
+        for (var c in Project.__firebaseConfig) {
+          var config = Project.__firebaseConfig[c]
+          var appName = config.appName
+          // delete config.appName
+          if (appName) {
+            firebase.initializeApp(config, appName)
+            window.dispatchEvent(new CustomEvent('firebase-app-initialized', { detail: {
+              appName
+            }}))
+          } else if (!defaultFlag) {
+            firebase.initializeApp(config)
+            window.dispatchEvent(new CustomEvent('firebase-app-initialized'))
+          } else {
+            console.error('There\'s already a default firebase app initialized, please put an appName to the config for ' + config.projectId)
+          }
+        }
       }
-    })
+      if (!document.head.querySelector(`#firebase-script`)) {
+        t.parentNode.insertBefore(script, t)
+      }
+    }
+
+    const reinitializeFetchRealtimeData = () => {
+      for (var i in __firebaseRefs) {
+        if (!__debugOffline) {
+          fetchRealtimeData(i)
+        }
+      }
+      window.removeEventListener('firebase-app-initialized', reinitializeFetchRealtimeData)
+    }
+
+    window.addEventListener('firebase-app-initialized', reinitializeFetchRealtimeData)
+
+    const updateLocalDB = (path, data, child, auth, del) => {
+      path = path.split('?')[0].replace('https://', '').replace('.json', '')
+      if (child) {
+        __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
+        const parentDb = __openedDbs[localDbPathPrefix + path]
+        path = path + '/' + child
+        parentDb.upsert(child, (doc) => {
+          doc.childPath = path
+          doc.update = new Date()
+          return doc
+        })
+      }
+
+      if (auth) {
+        firebaseAuthPaths.upsert(path, (doc) => {
+          doc.auth = auth
+          return doc
+        })
+      }
+
+      if (typeof data === 'object') {
+        for (var prop in data) {
+          updateLocalDB(path, data[prop], prop, auth, del)
+        }
+      } else {
+        __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
+        const db = __openedDbs[localDbPathPrefix + path]
+        db.upsert('$value', (doc) => {
+          doc.value = data
+          doc.auth = auth
+          return doc
+        })
+      }
+    }
+
+    const localDBData = (path, child) => {
+      path = path.split('?')[0].replace('https://', '').replace('.json', '')
+      if (child) {
+        path = path + '/' + child
+      }
+      __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
+      const db = __openedDbs[localDbPathPrefix + path]
+      return db.allDocs({ limit: 1000 }).then((res) => {
+        var promises = []
+        for (var i in res.rows) {
+          if (res.rows[i].id === '$value') {
+            return db.get(res.rows[i].id).then((doc) => (doc.value))
+          }
+          promises.push(localDBData(path, res.rows[i].id))
+        }
+        return Promise.all(promises).then((snap) => {
+          var data = {}
+          for (var i in res.rows) {
+            data[res.rows[i].id] = snap[i]
+          }
+          return data
+        })
+      })
+    }
+
+    const getLocalDB = (path, element, name) => {
+      if (!__firebaseRest[path] || !__firebaseRest[path].data) {
+        localDBData(path).then((snapshot) => {
+          if (!__firebaseRest[path] || !__firebaseRest[path].data) {
+            const { type, desc, paginated, readOnly, computedOrderByChild, orderByKey } = element.__properties[name]
+            if (type === Array) {
+              var data = paginated ? element[name] || [] : []
+              for (var s in snapshot) {
+                var childSnapshot = snapshot[s]
+                var key = s
+                var value = valueWithKey(key, childSnapshot)
+
+                if (paginated) {
+                  var flag = true
+                  for (var i in data) {
+                    if (data[i].$key === key) {
+                      flag = false
+                      break
+                    }
+                  }
+                  if (flag) {
+                    data.push(value)
+                  }
+                } else {
+                  data.push(value)
+                }
+              }
+
+              data = sortData(data, computedOrderByChild, orderByKey)
+
+              if (desc) {
+                data.reverse()
+              }
+
+              element.__setValue(name, data, readOnly)
+              element.notifySplices(name)
+              element.notifyPath(name)
+            } else {
+              element.__setValue(name, snapshot, readOnly)
+            }
+
+            if (window.performance && Project.__build !== 'prod') {
+              console.log('fetch local', __firebaseRest[path], performance.now() - window.globalStart)
+            }
+          }
+        })
+      }
+    }
+
+    const closeLocalDB = (i) => {
+      __openedDbs[i].close().then(() => {
+        __openedDbs[i] = null
+      }).catch(err => {
+        console.log(i, err)
+      })
+    }
 
     const onError = (err) => {
       throw err
@@ -71,74 +216,157 @@
       return valueWithKey(key, value)
     }
 
-    const onValue = (i, snapshot) => {
-      if (__elementProps[i].length) {
-        __elementProps[i].forEach((item, index) => {
-          const { element, name } = item
-          const { type, desc, paginated, readOnly, computedOrderByChild, orderByKey } = element.__properties[name]
+    const onValueSnapshot = (snapshot, item) => {
+      const { element, name } = item
+      const { type, desc, paginated, readOnly, computedOrderByChild, orderByKey } = element.__properties[name]
 
-          if (type === Array) {
-            if (!element.__properties[name].initialLoaded) {
-              var data = paginated ? element[name] || [] : []
-              if (snapshot.hasChildren()) {
-                snapshot.forEach((childSnapshot) => {
-                  var key = childSnapshot.key
-                  var value = valueWithKey(key, childSnapshot.val())
-
-                  var obj = {}
-                  obj[key] = value
-                  // element.__updateLocalDB(property, obj, firebasePath)
-
-                  if (paginated) {
-                    var flag = true
-                    for (var i in data) {
-                      if (data[i].$key === key) {
-                        flag = false
-                        break
-                      }
-                    }
-                    if (flag) {
-                      data.push(value)
-                    }
-                  } else {
-                    data.push(value)
-                  }
-                })
-              }
+      if (type === Array) {
+        if (!element.__properties[name].initialLoaded) {
+          var data = paginated ? element[name] || [] : []
+          if (snapshot.hasChildren()) {
+            snapshot.forEach((childSnapshot) => {
+              var key = childSnapshot.key
+              var value = valueWithKey(key, childSnapshot.val())
 
               if (paginated) {
-                data = sortData(data, computedOrderByChild, orderByKey)
+                var flag = true
+                for (var i in data) {
+                  if (data[i].$key === key) {
+                    flag = false
+                    break
+                  }
+                }
+                if (flag) {
+                  data.push(value)
+                }
+              } else {
+                data.push(value)
               }
-              if (desc) {
-                data.reverse()
-              }
-
-              element.__setValue(name, data, readOnly)
-              element.notifySplices(name)
-              element.notifyPath(name)
-              element.__properties[name].initialLoaded = true
-            }
-          } else {
-            element.__setValue(name, snapshot.val(), readOnly)
-            // element.__updateLocalDB(property, snapshot.val(), firebasePath)
+            })
           }
-        })
-      } else if (__firebaseRefs[i].ref) {
-        __firebaseRefs[i].ref.off()
-        __firebaseRefs[i].ref = null
-        __firebaseRefs[i].onset = false
+          data = sortData(data, computedOrderByChild, orderByKey)
+          if (desc) {
+            data.reverse()
+          }
+          element.__setValue(name, data, readOnly)
+          element.notifySplices(name)
+          element.notifyPath(name)
+          element.__properties[name].initialLoaded = true
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('fetch firebase', performance.now() - window.globalStart)
+          }
+        }
+      } else {
+        element.__setValue(name, snapshot.val(), readOnly)
+        if (window.performance && Project.__build !== 'prod') {
+          console.log('fetch firebase', performance.now() - window.globalStart)
+        }
       }
     }
 
-    const onChildAdded = (i, snapshot, previousChildKey) => {
+    const onFetchRest = (json, element, name) => {
+      const {
+        readOnly,
+        type,
+        computedOrderByChild,
+        orderByKey,
+        desc,
+        paginated
+      } = element.__properties[name]
+
+      if (type === Array) {
+        var data = paginated ? (element[name] || []) : []
+        for (var i in json) {
+          var obj = json[i]
+          obj.$key = i
+          var flag = true
+          for (var j in data) {
+            if (data[j].$key === i) {
+              flag = false
+              break
+            }
+          }
+          if (flag) {
+            data.push(obj)
+          }
+        }
+
+        data = sortData(data, computedOrderByChild, orderByKey)
+
+        if (desc) {
+          data.reverse()
+        }
+
+        element.__setValue(name, data, readOnly)
+        element.__properties[name].loadedViaRest = true
+      } else {
+        this.__setValue(name, json, readOnly)
+      }
+      if (window.performance && Project.__build !== 'prod') {
+        console.log('fetch rest', performance.now() - window.globalStart)
+      }
+    }
+
+    const fetchViaRest = (i, element, name) => {
+      // check if firebase is initialized, if it is, then use firebase
+      if (window.firebase) {
+        return
+      }
+      // if data has been loaded, just use original data that has been fetched (stale up to 60 seconds)
+      if (__firebaseRest[i] && __firebaseRest[i].data && new Date() - __firebaseRest[i].time < staleTime) {
+        return onFetchRest(__firebaseRest[i].data, element, name)
+      }
+
+      __firebaseRest[i] = __firebaseRest[i] || {}
+      __firebaseRest[i].waiting = __firebaseRest[i].waiting || []
+      __firebaseRest[i].waiting.push({
+        element,
+        name
+      })
+
+      if (new Date() - __firebaseRest[i].time >= staleTime || !__firebaseRest[i].time) {
+        __firebaseRest[i].time = new Date()
+        fetch(i)
+          .then((response) => {
+            return response.json()
+          })
+          .then(json => {
+            if (!json) {
+              return
+            }
+            if (json.error) {
+              return console.log(json.error)
+            }
+            updateLocalDB(i, json, element.__properties[name].auth)
+            __firebaseRest[i].data = json
+            while (__firebaseRest[i].waiting.length) {
+              var item = __firebaseRest[i].waiting.pop()
+              onFetchRest(json, item.element, item.name)
+            }
+          })
+      }
+    }
+
+    const onValue = (i, auth, snapshot) => {
+      updateLocalDB(i, snapshot.val(), null, auth)
+      __firebaseRest[i] = __firebaseRest[i] || {}
+      __firebaseRest[i].data = snapshot.val()
+      if (__elementProps[i].length) {
+        __elementProps[i].forEach(onValueSnapshot.bind(this, snapshot))
+      } else if (__firebaseRefs[i].ref) {
+        unbindRef(i)
+      }
+    }
+
+    const onChildAdded = (i, auth, snapshot, previousChildKey) => {
+      updateLocalDB(i, snapshot.val(), snapshot.key, auth)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
           const { desc, type } = element.__properties[name]
-          // const key = snapshot.key
           if (element.__properties[name].initialLoaded && type === Array) {
             var value = snapshot.val()
-            const previousChildIndex = Project.utils.indexOf(element[name], (item) => (item.$key === previousChildKey))
+            const previousChildIndex = element[name].findIndex((item) => (item.$key === previousChildKey))
             value = snapshotToValue(snapshot)
 
             for (var i in element[name]) {
@@ -153,56 +381,46 @@
               element.splice(name, previousChildIndex + 1, 0, value)
             }
           }
-
-          var obj = {}
-          obj[snapshot.key] = snapshot.val()
-          // element.__updateLocalDB(property, obj, firebasePath)
         })
       } else if (__firebaseRefs[i].ref) {
-        __firebaseRefs[i].ref.off()
-        __firebaseRefs[i].ref = null
-        __firebaseRefs[i].onset = false
+        unbindRef(i)
       }
     }
 
-    const onChildRemoved = (i, snapshot) => {
+    const onChildRemoved = (i, auth, snapshot) => {
+      updateLocalDB(i, snapshot.val(), snapshot.key, auth, true)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
           const { type } = element.__properties[name]
           if (type === Array) {
             const key = snapshot.key
-            const index = Project.utils.indexOf(element[name], (item) => (item.$key === key))
+            const index = element[name].findIndex((item) => (item.$key === key))
             if (index >= 0) {
               element.splice(name, index, 1)
             }
-
-            var obj = {}
-            obj[snapshot.key] = snapshot.val()
           }
-          // element.__updateLocalDB(property, obj, firebasePath)
         })
       } else if (__firebaseRefs[i].ref) {
-        __firebaseRefs[i].ref.off()
-        __firebaseRefs[i].ref = null
-        __firebaseRefs[i].onset = false
+        unbindRef(i)
       }
     }
 
-    const onChildMoved = (i, snapshot, previousChildKey) => {
+    const onChildMoved = (i, auth, snapshot, previousChildKey) => {
+      updateLocalDB(i, snapshot.val(), snapshot.key, auth)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
           const { desc, type } = element.__properties[name]
           if (type === Array) {
             var key = snapshot.key
-            var index = Project.utils.indexOf(element[name], (item) => (item.$key === key))
+            var index = element[name].findIndex((item) => (item.$key === key))
             var targetIndex
             if (index >= 0) {
               var value = snapshotToValue(snapshot)
               element.splice(name, index, 1)
 
-              targetIndex = previousChildKey ? Project.utils.indexOf(element[name], (item) => (item.$key === previousChildKey)) + 1 : 0
+              targetIndex = previousChildKey ? element[name].findIndex((item) => (item.$key === previousChildKey)) + 1 : 0
 
               if (desc) {
                 element.splice(name, targetIndex - 1 < 0 ? element[name].length : targetIndex - 1, 0, value)
@@ -213,20 +431,19 @@
           }
         })
       } else if (__firebaseRefs[i].ref) {
-        __firebaseRefs[i].ref.off()
-        __firebaseRefs[i].ref = null
-        __firebaseRefs[i].onset = false
+        unbindRef(i)
       }
     }
 
-    const onChildChanged = (i, snapshot) => {
+    const onChildChanged = (i, auth, snapshot) => {
+      updateLocalDB(i, snapshot.val(), snapshot.key, auth)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
           const { type } = element.__properties[name]
           if (type === Array) {
             var key = snapshot.key
-            var index = Project.utils.indexOf(element[name], (item) => (item.$key === key))
+            var index = element[name].findIndex((item) => (item.$key === key))
             var prev = element[name][index]
 
             if (prev) {
@@ -244,29 +461,22 @@
                 element.set([name, index], value)
               }
             }
-            var obj = {}
-            obj[snapshot.key] = snapshot.val()
-            // element.__updateLocalDB(property, obj, firebasePath)
           }
         })
       } else if (__firebaseRefs[i].ref) {
-        __firebaseRefs[i].ref.off()
-        __firebaseRefs[i].ref = null
-        __firebaseRefs[i].onset = false
+        unbindRef(i)
       }
     }
 
-    const fetchData = (url) => {
+    const fetchRealtimeData = (url) => {
       __firebaseRefs[url].ref = __firebaseRefs[url].ref || computeRef(__firebaseRefs[url].property)
       if (!__firebaseRefs[url].onset && __firebaseRefs[url].ref) {
-        __firebaseRefs[url].ref.on('value', onValue.bind(this, url), onError)
-        __firebaseRefs[url].ref.on('child_added', onChildAdded.bind(this, url), onError)
-        __firebaseRefs[url].ref.on('child_removed', onChildRemoved.bind(this, url), onError)
-        __firebaseRefs[url].ref.on('child_moved', onChildMoved.bind(this, url), onError)
-        __firebaseRefs[url].ref.on('child_changed', onChildChanged.bind(this, url), onError)
+        __firebaseRefs[url].ref.on('value', onValue.bind(this, url, __firebaseRefs[url].auth), onError)
+        __firebaseRefs[url].ref.on('child_added', onChildAdded.bind(this, url, __firebaseRefs[url].auth), onError)
+        __firebaseRefs[url].ref.on('child_removed', onChildRemoved.bind(this, url, __firebaseRefs[url].auth), onError)
+        __firebaseRefs[url].ref.on('child_moved', onChildMoved.bind(this, url, __firebaseRefs[url].auth), onError)
+        __firebaseRefs[url].ref.on('child_changed', onChildChanged.bind(this, url, __firebaseRefs[url].auth), onError)
         __firebaseRefs[url].onset = true
-      } else if (__firebaseRefs[url].ref) {
-        __firebaseRefs[url].ref.once('value', onValue.bind(this, url), onError)
       }
     }
 
@@ -275,6 +485,10 @@
       const keys = attrs ? attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, ''))) : []
       const values = keys ? keys.map(key => element.get(key)) : []
       return { attrs, keys, values }
+    }
+
+    const getBaseUrl = (appName, computedPath) => {
+      return `https://${appName}.firebaseio.com/${computedPath}.json?`
     }
 
     const getRestUrl = (property) => {
@@ -305,7 +519,7 @@
       }
 
       const queryParams = []
-      var ref = `https://${computedProjectId}.firebaseio.com/${computedPath}.json?`
+      var ref = getBaseUrl(computedProjectId, computedPath)
 
       if (equalTo) {
         queryParams.push(`equalTo=${encodeURI(equalTo)}`)
@@ -423,11 +637,11 @@
         projectId,
         readOnce,
         paginated,
-        type
+        type,
+        auth
       } = properties[name]
       const computedPath = computePath(firebasePath, element)
       const computedOrderByChild = computeChild(properties[name].orderByChild, element)
-      const firebasePathsDB = new window.PouchDB('firebasePaths', {auto_compaction: true})
 
       // set copy of properties to element.__properties[name]
       element.__properties[name] = Project.utils.extends({}, properties[name], {computedPath, name, computedOrderByChild})
@@ -436,23 +650,15 @@
         element.__properties[name].initialLoaded = false
       }
 
-      // save firebasePath to localDB
-      firebasePathsDB.upsert(firebasePath, (doc) => {
-        doc.firebasePath = firebasePath
-        doc.paths = doc.paths || []
-        doc.paths.push(computedPath)
-        return doc
-      })
-      // console.log(element.__properties[name])
-
       element.__properties[name].url = getRestUrl(element.__properties[name], element)
 
+      getLocalDB(element.__properties[name].url, element, name)
+
       __elementProps[element.__properties[name].url] = __elementProps[element.__properties[name].url] || []
-      if (Project.utils.indexOf(
-        __elementProps[element.__properties[name].url], (item) => (item.element === element && item.name === name)) < 0 &&
-        !readOnce &&
-        !paginated
-      ) {
+
+      var index = __elementProps[element.__properties[name].url].findIndex((item) => (item.element === element && item.name === name))
+
+      if (index < 0 && !readOnce && !paginated) {
         __elementProps[element.__properties[name].url].push({
           element,
           name
@@ -478,20 +684,42 @@
         }
       }
 
-      fetchData(element.__properties[name].url)
+      __firebaseRefs[element.__properties[name].url].auth = __firebaseRefs[element.__properties[name].url].auth || auth
+
+      if (!__debugOffline) {
+        fetchRealtimeData(element.__properties[name].url)
+
+        fetchViaRest(element.__properties[name].url, element, name)
+
+        if (__firebaseRefs[element.__properties[name].url].ref) {
+          __firebaseRefs[element.__properties[name].url].ref.once('value').then((snapshot) => {
+            onValueSnapshot(snapshot, { name, element })
+          })
+        }
+      }
+    }
+
+    const unbindRef = (url) => {
+      if (!__elementProps[url].length && __firebaseRefs[url].ref) {
+        __firebaseRefs[url].ref.off()
+        __firebaseRefs[url].ref = null
+        __firebaseRefs[url].onset = false
+
+        var path = url.split('?')[0].replace('https://', '').replace('.json', '')
+        for (var i in __openedDbs) {
+          if (i.match(path) && __openedDbs[i]) {
+            closeLocalDB(i)
+          }
+        }
+      }
     }
 
     const unbindProperty = (name, element, property) => {
       const { url } = property[name]
-      const index = Project.utils.indexOf(__elementProps[url], (item) => (item.element === element && item.name === name))
+      const index = __elementProps[url].findIndex((item) => (item.element === element && item.name === name))
       if (index >= 0) {
         __elementProps[url].splice(__elementProps[url], 1)
-        if (!__elementProps[url].length && __firebaseRefs[url].ref) {
-          __firebaseRefs[url].ref.off()
-          __firebaseRefs[url].ref = null
-          __firebaseRefs[url].onset = false
-          console.log(__firebaseRefs[url])
-        }
+        unbindRef(url)
       }
     }
 
@@ -508,7 +736,6 @@
     }
 
     const unbind = (element, properties) => {
-      console.log('unbiding', element)
       const bindings = Object.keys(properties)
         .filter((name) => {
           const property = properties[name]
@@ -526,7 +753,6 @@
       * @extends HTMLElement
       */
       return class extends superClass {
-
         constructor () {
           super()
           Object.defineProperty(this, '__properties', { value: {} })

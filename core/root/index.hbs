@@ -44,6 +44,7 @@
     {{/each}}
     <meta name="msapplication-TileColor" content="{{theme.themeColor}}">
     <meta name="msapplication-tap-highlight" content="{{theme.webApp.tapHighlight}}">
+    <script src="https://polyfill.io/v2/polyfill.min.js?features=IntersectionObserver,fetch,Promise,Array.prototype.findIndex,Object.defineProperty,Map,Set,CustomEvent,performance.now&flags=gated"></script>
     <script>
       // set project namespace
       Object.defineProperty(window, 'Project', { value: window.Project || {} })
@@ -71,15 +72,39 @@
           if (obj.hasOwnProperty(key)) return false
         }
         return true
-      }})
-      Object.defineProperty(Project.utils, 'indexOf', { value: Project.utils.indexOf || function (array, method) {
-        for (var i = 0; i < array.length; i++) {
-          if (method(array[i])) {
-            return i
+      }});
+      (() => {
+        var __currentUsed = 0
+        Object.defineProperty(Project.utils, 'checkStorage', { value: Project.utils.checkStorage || function() {
+          if (window.navigator && navigator.storage && navigator.storage.estimate) {
+            return navigator.storage.estimate()
+          } else if (window.navigator &&
+            navigator.webkitTemporaryStorage &&
+            navigator.webkitTemporaryStorage.queryUsageAndQuota &&
+            typeof navigator.webkitTemporaryStorage.queryUsageAndQuota === 'function') {
+            return new Promise ((resolve, reject) => {
+              navigator.webkitTemporaryStorage.queryUsageAndQuota(
+                (usedBytes, grantedBytes) => {
+                  if (__currentUsed && Project.__build !== 'prod') {
+                    console.log('added data:', ((usedBytes - __currentUsed) / 1024) / 1024, 'MB. Current used:', (usedBytes / 1024) / 1024, 'MB')
+                  }
+                  __currentUsed = usedBytes
+                  return resolve({
+                    usage: usedBytes
+                  })
+                }, reject )
+            })
+          } else {
+            Promise.resolve({
+              type: "no_navigator_storage"
+            })
           }
-        }
-        return -1
-      }})
+        }});
+        Project.utils.checkStorage()
+      })()
+
+
+      Object.defineProperty(Project, '__dataRestStaleTime', { value: {{app.waitBeforeFetchingSameURLInRest}} })
       Object.defineProperty(Project, '__firebaseFetch', { value: Project.__firebaseFetch || {} })
       Object.defineProperty(Project, '__firebaseVersion', { value: Project.__firebaseVersion || '{{app.firebaseVersion}}' })
 
@@ -87,6 +112,7 @@
       Object.defineProperty(Project, '__build', { value: Project.__build || '{{build}}' })
       Object.defineProperty(Project, '__version', { value: Project.__version || '{{version}}' })
       Object.defineProperty(Project, '__database', { value: Project.__database || '{{dtabase}}' })
+      Object.defineProperty(Project, '__analytics', { value: Project.__analytics || '{{app.analytics}} '})
 
       // set config variables
       Object.defineProperty(Project, '__routes', { value: Project.__routes || '{{#compileRouting}}{{/compileRouting}}' })
@@ -106,6 +132,9 @@
               exDescription: err.message,
               exFatal: true
             })
+          }
+          if (window.Raven) {
+            Raven.captureException(err)
           }
         } catch (e) {
           console.error(e)
@@ -132,6 +161,26 @@
     <!-- Load webcomponents-loader.js to check and load any polyfills your browser needs -->
     <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
 
+    {{#if app.sentryUrl}}
+    <script src="https://cdn.ravenjs.com/3.17.0/raven.min.js" crossorigin="anonymous" async onload="installRaven()"></script>
+
+    <script>
+      function installRaven() {
+        if (window.Raven && !Raven.isSetup()) {
+          Raven.config('{{app.sentryUrl}}', {
+            environment: Project.__build === 'prod' ? 'production' : Project.__build,
+            autoBreadcrumbs: Project.__build === 'prod',
+            debug: Project.__build !== 'prod'
+          }).install()
+          if (Project.__build !== 'prod') {
+            console.log('Raven installed')
+          }
+          installRaven = null
+        }
+      }
+    </script>
+    {{/if}}
+
     <!-- Load your application shell -->
     <link rel="import" href="script.html">
     <link rel="import" href="shell/app-shell.html">
@@ -155,9 +204,21 @@
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
       })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-      ga('create', '{{app.analytics}}', 'auto');
-      ga('send', 'pageview');
+      if (window.ga) {
+        ga('create', Project.__analytics, 'auto');
+        ga('send', 'pageview');
+      }
+      setTimeout(() => {
+        Project.utils.checkStorage().then((res) => {
+          if (res.usage && window.ga) {
+            ga('send', 'event', 'appLoad', 'load', null, res.usage)
+          } else if (res.type) {
+            Raven.captureMessage(res.type)
+          }
+        }).catch((err) => {
+          Raven.captureException(err)
+        })
+      }, 10000)
     </script>
 
     <script>
