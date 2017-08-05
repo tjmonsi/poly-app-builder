@@ -1,0 +1,556 @@
+<link rel="import" href="../scripts/pouchdb.html">
+<link rel="import" href="../../../../bower_components/polymer/lib/utils/async.html">
+
+<script src="https://www.gstatic.com/firebasejs/4.2.0/firebase.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: 'AIzaSyDdpZgjWiBnIo4B8lPYwUygukV2YfAuiLk',
+    authDomain: 'tjkpm-site-yng.firebaseapp.com',
+    databaseURL: 'https://tjkpm-site-yng.firebaseio.com',
+    projectId: 'tjkpm-site-yng',
+    storageBucket: 'tjkpm-site-yng.appspot.com',
+    messagingSenderId: '970625793163'
+  }
+  window.firebase.initializeApp(config)
+</script>
+<script>
+  (() => {
+    const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
+    const __firebaseRefs = {}
+    const __elementProps = {}
+
+    window.addEventListener('firebase-app-initialized', () => {
+      console.log('setting event listeners on firebase')
+      for (var i in __firebaseRefs) {
+        setFirebaseEvents(i)
+      }
+    })
+
+    const onError = (err) => {
+      throw err
+    }
+
+    const sortData = (data, child, key) => {
+      data.sort((item1, item2) => {
+        var newChild = child || '$key'
+        if (child || key) {
+          if (item1[newChild] < item2[newChild]) {
+            return -1
+          }
+          if (item1[newChild] > item2[newChild]) {
+            return 1
+          }
+          return 0
+        } else {
+          if (item1 < item2) {
+            return -1
+          }
+          if (item1 > item2) {
+            return 1
+          }
+          return 0
+        }
+      })
+      return data
+    }
+
+    const valueWithKey = (key, value) => {
+      var leaf = typeof value !== 'object'
+      if (leaf) {
+        value = {$key: key, $val: value}
+      } else {
+        value.$key = key
+      }
+      return value
+    }
+
+    const snapshotToValue = (snapshot) => {
+      const key = snapshot.key
+      const value = snapshot.val()
+      return valueWithKey(key, value)
+    }
+
+    const onValue = (i, snapshot) => {
+      if (__elementProps[i].length) {
+        __elementProps[i].forEach((item, index) => {
+          const { element, name } = item
+          const { type, desc, paginated, readOnly, computedOrderByChild, orderByKey } = element.__properties[name]
+
+          if (type === Array) {
+            if (!element.__properties[name].initialLoaded) {
+              var data = paginated ? element[name] || [] : []
+              if (snapshot.hasChildren()) {
+                snapshot.forEach((childSnapshot) => {
+                  var key = childSnapshot.key
+                  var value = valueWithKey(key, childSnapshot.val())
+
+                  var obj = {}
+                  obj[key] = value
+                  // element.__updateLocalDB(property, obj, firebasePath)
+
+                  if (paginated) {
+                    var flag = true
+                    for (var i in data) {
+                      if (data[i].$key === key) {
+                        flag = false
+                        break
+                      }
+                    }
+                    if (flag) {
+                      data.push(value)
+                    }
+                  } else {
+                    data.push(value)
+                  }
+                })
+              }
+
+              if (paginated) {
+                data = sortData(data, computedOrderByChild, orderByKey)
+              }
+              if (desc) {
+                data.reverse()
+              }
+
+              element.__setValue(name, data, readOnly)
+              element.notifySplices(name)
+              element.notifyPath(name)
+              element.__properties[name].initialLoaded = true
+            }
+          } else {
+            element.__setValue(name, snapshot.val(), readOnly)
+            // element.__updateLocalDB(property, snapshot.val(), firebasePath)
+          }
+        })
+      } else if (__firebaseRefs[i].ref) {
+        __firebaseRefs[i].ref.off()
+        __firebaseRefs[i].ref = null
+        __firebaseRefs[i].onset = false
+      }
+    }
+
+    const onChildAdded = (i, snapshot, previousChildKey) => {
+      if (__elementProps[i].length) {
+        __elementProps[i].forEach((item) => {
+          const { element, name } = item
+          const { desc, type } = element.__properties[name]
+          // const key = snapshot.key
+          if (element.__properties[name].initialLoaded && type === Array) {
+            var value = snapshot.val()
+            const previousChildIndex = Project.utils.indexOf(element[name], (item) => (item.$key === previousChildKey))
+            value = snapshotToValue(snapshot)
+
+            for (var i in element[name]) {
+              if (element[name][i].$key === value.$key) {
+                return
+              }
+            }
+
+            if (desc) {
+              element.splice(name, previousChildIndex < 0 ? element[name].length : previousChildIndex, 0, value)
+            } else {
+              element.splice(name, previousChildIndex + 1, 0, value)
+            }
+          }
+
+          var obj = {}
+          obj[snapshot.key] = snapshot.val()
+          // element.__updateLocalDB(property, obj, firebasePath)
+        })
+      } else if (__firebaseRefs[i].ref) {
+        __firebaseRefs[i].ref.off()
+        __firebaseRefs[i].ref = null
+        __firebaseRefs[i].onset = false
+      }
+    }
+
+    const onChildRemoved = (i, snapshot) => {
+      if (__elementProps[i].length) {
+        __elementProps[i].forEach((item) => {
+          const { element, name } = item
+          const { type } = element.__properties[name]
+          if (type === Array) {
+            const key = snapshot.key
+            const index = Project.utils.indexOf(element[name], (item) => (item.$key === key))
+            if (index >= 0) {
+              element.splice(name, index, 1)
+            }
+
+            var obj = {}
+            obj[snapshot.key] = snapshot.val()
+          }
+          // element.__updateLocalDB(property, obj, firebasePath)
+        })
+      } else if (__firebaseRefs[i].ref) {
+        __firebaseRefs[i].ref.off()
+        __firebaseRefs[i].ref = null
+        __firebaseRefs[i].onset = false
+      }
+    }
+
+    const onChildMoved = (i, snapshot, previousChildKey) => {
+      if (__elementProps[i].length) {
+        __elementProps[i].forEach((item) => {
+          const { element, name } = item
+          const { desc, type } = element.__properties[name]
+          if (type === Array) {
+            var key = snapshot.key
+            var index = Project.utils.indexOf(element[name], (item) => (item.$key === key))
+            var targetIndex
+            if (index >= 0) {
+              var value = snapshotToValue(snapshot)
+              element.splice(name, index, 1)
+
+              targetIndex = previousChildKey ? Project.utils.indexOf(element[name], (item) => (item.$key === previousChildKey)) + 1 : 0
+
+              if (desc) {
+                element.splice(name, targetIndex - 1 < 0 ? element[name].length : targetIndex - 1, 0, value)
+              } else {
+                element.splice(name, targetIndex, 0, value)
+              }
+            }
+          }
+        })
+      } else if (__firebaseRefs[i].ref) {
+        __firebaseRefs[i].ref.off()
+        __firebaseRefs[i].ref = null
+        __firebaseRefs[i].onset = false
+      }
+    }
+
+    const onChildChanged = (i, snapshot) => {
+      if (__elementProps[i].length) {
+        __elementProps[i].forEach((item) => {
+          const { element, name } = item
+          const { type } = element.__properties[name]
+          if (type === Array) {
+            var key = snapshot.key
+            var index = Project.utils.indexOf(element[name], (item) => (item.$key === key))
+            var prev = element[name][index]
+
+            if (prev) {
+              var value = snapshotToValue(snapshot)
+              if (value instanceof Object) {
+                for (var p1 in value) {
+                  element.set([name, index, p1], value[p1])
+                }
+                for (var p2 in prev) {
+                  if (!value.hasOwnProperty(p2)) {
+                    element.set([name, index, p2], null)
+                  }
+                }
+              } else {
+                element.set([name, index], value)
+              }
+            }
+            var obj = {}
+            obj[snapshot.key] = snapshot.val()
+            // element.__updateLocalDB(property, obj, firebasePath)
+          }
+        })
+      } else if (__firebaseRefs[i].ref) {
+        __firebaseRefs[i].ref.off()
+        __firebaseRefs[i].ref = null
+        __firebaseRefs[i].onset = false
+      }
+    }
+
+    const fetchData = (url) => {
+      __firebaseRefs[url].ref = __firebaseRefs[url].ref || computeRef(__firebaseRefs[url].property)
+      if (!__firebaseRefs[url].onset && __firebaseRefs[url].ref) {
+        __firebaseRefs[url].ref.on('value', onValue.bind(this, url), onError)
+        __firebaseRefs[url].ref.on('child_added', onChildAdded.bind(this, url), onError)
+        __firebaseRefs[url].ref.on('child_removed', onChildRemoved.bind(this, url), onError)
+        __firebaseRefs[url].ref.on('child_moved', onChildMoved.bind(this, url), onError)
+        __firebaseRefs[url].ref.on('child_changed', onChildChanged.bind(this, url), onError)
+        __firebaseRefs[url].onset = true
+      } else if (__firebaseRefs[url].ref) {
+        __firebaseRefs[url].ref.once('value', onValue.bind(this, url), onError)
+      }
+    }
+
+    const getKeyValuesInPath = (firebasePath, element) => {
+      const attrs = firebasePath.match(pathMatch)
+      const keys = attrs ? attrs.map((attr) => (attr.replace(/\[/g, '').replace(/\]/g, ''))) : []
+      const values = keys ? keys.map(key => element.get(key)) : []
+      return { attrs, keys, values }
+    }
+
+    const getRestUrl = (property) => {
+      const {
+        computedPath,
+        startAt,
+        endAt,
+        equalTo,
+        limitToLast,
+        limitToFirst,
+        computedOrderByChild,
+        orderByKey,
+        orderByPriority,
+        orderByValue,
+        appName,
+        projectId
+      } = property
+      var computedProjectId
+      if (!projectId) {
+        for (var ci in Project.__firebaseConfig) {
+          if ((appName && Project.__firebaseConfig[ci].appName === appName) || !Project.__firebaseConfig[ci].appName) {
+            computedProjectId = Project.__firebaseConfig[ci].projectId
+            break
+          }
+        }
+      } else {
+        computedProjectId = projectId
+      }
+
+      const queryParams = []
+      var ref = `https://${computedProjectId}.firebaseio.com/${computedPath}.json?`
+
+      if (equalTo) {
+        queryParams.push(`equalTo=${encodeURI(equalTo)}`)
+      } else {
+        if (startAt) queryParams.push(`startAt=${encodeURI(startAt)}`)
+        if (endAt) queryParams.push(`endAt=${encodeURI(endAt)}`)
+      }
+
+      if (limitToLast) {
+        queryParams.push(`limitToLast=${encodeURI(limitToLast)}`)
+      } else if (limitToFirst) {
+        queryParams.push(`limitToFirst=${encodeURI(limitToFirst)}`)
+      }
+
+      if (computedOrderByChild && typeof computedOrderByChild === 'string') {
+        queryParams.push(`orderBy="${encodeURI(computedOrderByChild)}"`)
+      } else if (orderByKey) {
+        queryParams.push(`orderBy="$key"`)
+      } else if (orderByPriority) {
+        queryParams.push(`orderBy="$priority"`)
+      } else if (orderByValue) {
+        queryParams.push(`orderBy="$value"`)
+      }
+      return ref + queryParams.join('&')
+    }
+
+    const computeChild = (orderByChild, element) => {
+      if (orderByChild && typeof orderByChild === 'string') {
+        return orderByChild
+      } else if (orderByChild && typeof orderByChild === 'function') {
+        var computedOrderByChild = orderByChild(element)
+        if (computedOrderByChild && typeof computedOrderByChild === 'string') {
+          return computedOrderByChild
+        }
+      }
+    }
+
+    const computeRef = (property) => {
+      const {
+        computedPath,
+        startAt,
+        endAt,
+        equalTo,
+        limitToLast,
+        limitToFirst,
+        computedOrderByChild,
+        orderByKey,
+        orderByPriority,
+        orderByValue,
+        appName,
+        projectId
+      } = property
+      const computedAppName = appName || projectId
+      var ref = null
+      if (window.firebase) {
+        const app = computedAppName == null ? firebase.app() : firebase.app(appName)
+        ref = app.database().ref(computedPath)
+        if (equalTo) {
+          ref = ref.equalTo(equalTo)
+        } else {
+          ref = startAt ? ref.startAt(startAt) : ref
+          ref = endAt ? ref.endAt(endAt) : ref
+        }
+
+        if (limitToFirst) {
+          ref = ref.limitToFirst(limitToFirst)
+        } else if (limitToLast) {
+          ref = ref.limitToLast(limitToLast)
+        }
+
+        if (computedOrderByChild && typeof computedOrderByChild === 'string') {
+          ref = ref.orderByChild(computedOrderByChild)
+        } else if (orderByKey) {
+          ref = ref.orderByKey()
+        } else if (orderByPriority) {
+          ref = ref.orderByPriority()
+        } else if (orderByValue) {
+          ref = ref.orderByValue()
+        }
+      }
+      return ref
+    }
+
+    const computePath = (firebasePath, element) => {
+      if (typeof firebasePath === 'string') {
+        const { attrs, values } = getKeyValuesInPath(firebasePath, element)
+        var newPath = firebasePath
+        if (attrs) {
+          while (attrs.length > 0) {
+            var value = values.shift()
+            var attr = attrs.shift()
+            if (value !== null && value !== undefined) {
+              newPath = newPath.replace(attr, value)
+            } else {
+              return
+            }
+          }
+        }
+        return newPath
+      }
+    }
+
+    const bindProperty = (name, element, properties) => {
+      const {
+        firebasePath,
+        startAt,
+        endAt,
+        equalTo,
+        limitToLast,
+        limitToFirst,
+        orderByKey,
+        orderByPriority,
+        orderByValue,
+        appName,
+        projectId,
+        readOnce,
+        paginated,
+        type
+      } = properties[name]
+      const computedPath = computePath(firebasePath, element)
+      const computedOrderByChild = computeChild(properties[name].orderByChild, element)
+      const firebasePathsDB = new window.PouchDB('firebasePaths', {auto_compaction: true})
+
+      // set copy of properties to element.__properties[name]
+      element.__properties[name] = Project.utils.extends({}, properties[name], {computedPath, name, computedOrderByChild})
+
+      if (type === Array) {
+        element.__properties[name].initialLoaded = false
+      }
+
+      // save firebasePath to localDB
+      firebasePathsDB.upsert(firebasePath, (doc) => {
+        doc.firebasePath = firebasePath
+        doc.paths = doc.paths || []
+        doc.paths.push(computedPath)
+        return doc
+      })
+      // console.log(element.__properties[name])
+
+      element.__properties[name].url = getRestUrl(element.__properties[name], element)
+
+      __elementProps[element.__properties[name].url] = __elementProps[element.__properties[name].url] || []
+      if (Project.utils.indexOf(
+        __elementProps[element.__properties[name].url], (item) => (item.element === element && item.name === name)) < 0 &&
+        !readOnce &&
+        !paginated
+      ) {
+        __elementProps[element.__properties[name].url].push({
+          element,
+          name
+        })
+      }
+
+      __firebaseRefs[element.__properties[name].url] = __firebaseRefs[element.__properties[name].url] || {
+        ref: null,
+        onset: false,
+        property: {
+          computedPath,
+          startAt,
+          endAt,
+          equalTo,
+          limitToLast,
+          limitToFirst,
+          computedOrderByChild,
+          orderByKey,
+          orderByPriority,
+          orderByValue,
+          appName,
+          projectId
+        }
+      }
+
+      fetchData(element.__properties[name].url)
+    }
+
+    const unbindProperty = (name, element, property) => {
+      const { url } = property[name]
+      const index = Project.utils.indexOf(__elementProps[url], (item) => (item.element === element && item.name === name))
+      if (index >= 0) {
+        __elementProps[url].splice(__elementProps[url], 1)
+        if (!__elementProps[url].length && __firebaseRefs[url].ref) {
+          __firebaseRefs[url].ref.off()
+          __firebaseRefs[url].ref = null
+          __firebaseRefs[url].onset = false
+          console.log(__firebaseRefs[url])
+        }
+      }
+    }
+
+    const bind = (element, properties) => {
+      const bindings = Object.keys(properties)
+        .filter((name) => {
+          const property = properties[name]
+          if (Object.prototype.hasOwnProperty.call(property, 'firebasePath')) {
+            return true
+          }
+          return false
+        })
+      bindings.forEach(name => { bindProperty(name, element, properties) })
+    }
+
+    const unbind = (element, properties) => {
+      console.log('unbiding', element)
+      const bindings = Object.keys(properties)
+        .filter((name) => {
+          const property = properties[name]
+          if (Object.prototype.hasOwnProperty.call(property, 'firebasePath')) {
+            return true
+          }
+          return false
+        })
+      bindings.forEach(name => { unbindProperty(name, element, properties) })
+    }
+
+    window.Project.Mixins.FirebasePropertyMixin = (superClass) => {
+      /**
+      * @polymer
+      * @extends HTMLElement
+      */
+      return class extends superClass {
+
+        constructor () {
+          super()
+          Object.defineProperty(this, '__properties', { value: {} })
+        }
+
+        connectedCallback () {
+          super.connectedCallback()
+          const properties = Project.utils.collect(this.constructor, 'properties')
+          bind(this, properties)
+        }
+
+        disconnectedCallback () {
+          super.connectedCallback()
+          unbind(this, this.__properties)
+        }
+
+        __setValue (name, value, readOnly) {
+          if (readOnly) {
+            this._setProperty(name, value)
+          } else {
+            this.set(name, value)
+          }
+        }
+      }
+    }
+  })()
+</script>

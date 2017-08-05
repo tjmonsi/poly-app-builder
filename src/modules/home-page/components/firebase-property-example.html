@@ -1,0 +1,72 @@
+<link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../../bower_components/polymer/lib/elements/dom-repeat.html">
+<link rel="import" href="../../../../core/modules/firebase-property-mixin/mixins/firebase-property-mixin.html">
+
+<dom-module id="firebase-property-example">
+  <template>
+    <style>
+    </style>
+
+    <div class="container">
+      Firebase Property Example
+    </div>
+
+    <template is="dom-repeat" items="[[test]]">
+      [[item.name]]:[[item.value]]<br/>
+    </template>
+
+    Hello there<br/>
+    <template is="dom-repeat" items="[[test2]]">
+      [[item.name]]:[[item.value]]<br/>
+    </template>
+  </template>
+  <script>
+    (() => {
+      class FirebasePropertyExample extends window.Project.Mixins.FirebasePropertyMixin(Polymer.Element) {
+        static get is () { return 'firebase-property-example' }
+
+        static get properties () {
+          return {
+            params: {
+              type: Object,
+              readOnly: true
+            },
+            test: {
+              type: Array,
+              firebasePath: 'testGroup/data',
+              limitToFirst: 3,
+              orderByChild: 'value'
+            },
+
+            test2: {
+              type: Array,
+              firebasePath: '[[key]]/[[key2.val]]',
+              limitToFirst: 3,
+              orderByChild: () => ('value'),
+              desc: true
+            },
+
+            key: {
+              type: String,
+              value: 'testGroup'
+            },
+
+            key2: {
+              type: String,
+              value: {
+                val: 'data'
+              }
+            },
+
+            key3: {
+              type: String,
+              value: 'test'
+            }
+          }
+        }
+      }
+
+      window.customElements.define(FirebasePropertyExample.is, FirebasePropertyExample)
+    })()
+  </script>
+</dom-module>

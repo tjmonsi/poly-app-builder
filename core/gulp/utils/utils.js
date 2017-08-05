@@ -12,7 +12,8 @@ const sources = {
   modules: {
     'app-router': true,
     'app-network-status': true,
-    'firebase-mixin': true
+    'firebase-mixin': true,
+    'firebase-property-mixin': true
   }
 }
 

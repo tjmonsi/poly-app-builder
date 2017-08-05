@@ -1,7 +1,7 @@
 <link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../../../bower_components/polymer/lib/elements/dom-repeat.html">
 <link rel="import" href="../../firebase-mixin/firebase-mixin.html">
-<link rel="import" href="../components/component-example.html">
+<link rel="import" href="../components/firebase-property-example.html">
 
 <dom-module id="home-page">
   <template>
@@ -11,21 +11,14 @@
     <div class="container">
       Hello there [[params.id]]
 
-      <component-example></component-example>
-    </div>
+      <firebase-property-example></firebase-property-example>
 
-    <template is="dom-repeat" items="[[test]]">
-      test
-      [[item.name]]:[[item.value]]<br/>
-    </template>
-    Hello
-    <template is="dom-repeat" items="[[test2]]">
-      [[item.val]]
-    </template>
+      <!-- <firebase-property-example></firebase-property-example> -->
+    </div>
   </template>
   <script>
     (() => {
-      class HomePage extends Project.Mixins.FirebaseMixin(Polymer.Element) {
+      class HomePage extends Polymer.Element {
         static get is () { return 'home-page' }
 
         static get properties () {
@@ -33,66 +26,29 @@
             params: {
               type: Object,
               readOnly: true
-            },
-            test: {
-              type: Array,
-              firebasePath: '[[key]]/[[key2.val]]',
-              // desc: true,
-              limitToFirst: 3,
-              orderBy: 'child',
-              child: 'value',
-              // paginated: true
-            },
-
-            // test2: {
-            //   type: Array,
-            //   path: '[[key3]]',
-            //   orderBy: 'child',
-            //   child: 'val',
-            //   desc: true
-            // },
-
-            // test3: {
-            //   type: Array,
-            //   path: '[[key]]/[[key2.val]]',
-            //   orderBy: 'child',
-            //   child: 'val',
-            //   desc: true
-            // },
-
-            // test4: {
-            //   type: Array,
-            //   path: '[[key2.val]]/[[key]]',
-            //   orderBy: 'child',
-            //   child: 'val',
-            //   desc: true
-            // },
-
-            key: {
-              type: String,
-              value: 'testGroup'
-            },
-
-            key2: {
-              type: String,
-              value: {
-                val: 'data'
-              }
-            },
-
-            key3: {
-              type: String,
-              value: 'test'
             }
           }
         }
 
-        // constructor () {
-        //   super()
-        //   if (performance) {
-        //     console.log('Home page constructor called: ' + (performance.now() - window.globalStart))
-        //   }
-        // }
+        connectedCallback () {
+          super.connectedCallback()
+          for (var i = 0; i < 10; i++) {
+            setTimeout(() => {
+              this.shadowRoot.querySelector('.container').appendChild(document.createElement('firebase-property-example'))
+            }, i * 1000)
+          }
+          setTimeout(() => {
+            // this.deleteProperties()
+          }, 15000)
+        }
+
+        deleteProperties () {
+          for (var i = 0; i < 11; i++) {
+            setTimeout(() => {
+              this.shadowRoot.querySelector('firebase-property-example').remove()
+            }, i * 1000)
+          }
+        }
       }
 
       window.customElements.define(HomePage.is, HomePage)

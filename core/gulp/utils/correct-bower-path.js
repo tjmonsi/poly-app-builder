@@ -22,12 +22,14 @@ const correctBowerPath = () => {
           for (var j in child.attrs) {
             if (child.attrs[j].name === 'href') {
               document.childNodes[i].attrs[j].value = child.attrs[j].value.replace(new RegExp('../bower_components/', 'g'), 'bower_components/')
+              document.childNodes[i].attrs[j].value = child.attrs[j].value.replace(new RegExp('../../core/modules/', 'g'), '')
             }
           }
         } else if (child.tagName === 'script') {
           for (var k in child.attrs) {
             if (child.attrs[k].name === 'src') {
               document.childNodes[i].attrs[k].value = child.attrs[k].value.replace(new RegExp('../bower_components/', 'g'), 'bower_components/')
+              document.childNodes[i].attrs[k].value = child.attrs[k].value.replace(new RegExp('../../core/modules/', 'g'), '')
             }
           }
         }

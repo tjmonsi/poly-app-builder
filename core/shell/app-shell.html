@@ -2,8 +2,8 @@
 <link rel="import" href="../../bower_components/polymer/lib/elements/dom-repeat.html">
 <link rel="import" href="../modules/app-router/app-router.html">
 <link rel="import" href="../modules/app-network-status/app-network-status.html">
-<link rel="import" href="../modules/firebase-mixin/firebase-mixin.html">
-<!-- <link rel="import" href="../opts/auth-functions.html"> -->
+<link rel="import" href="../modules/firebase-property-mixin/mixins/firebase-property-mixin.html">
+<link rel="import" href="../opts/auth-functions.html">
 <link rel="import" href="../opts/firebase.html">
 <link rel="import" href="../opts/state-manager.html">
 
@@ -14,12 +14,8 @@
   </template>
   <script>
     (() => {
-      class AppShell extends ((typeof window.Project.Mixins.Permissions === 'function') ? window.Project.Mixins.Permissions(window.Project.Mixins.AppNetworkStatus(Polymer.Element)) : window.Project.Mixins.AppNetworkStatus(Polymer.Element)) {
+      class AppShell extends ((typeof window.Project.Mixins.AuthFunctions === 'function') ? window.Project.Mixins.AuthFunctions(window.Project.Mixins.AppNetworkStatus(Polymer.Element)) : window.Project.Mixins.AppNetworkStatus(Polymer.Element)) {
         static get is () { return 'app-shell' }
-
-        static get properties () {
-          return Project.utils.extends({}, super.properties, {})
-        }
 
         constructor () {
           super()
@@ -76,7 +72,9 @@
         __setComponents (content, components) {
           var componentsArray = []
           for (var i in components) {
-            componentsArray.push(Project.utils.extends({}, components[i], { node: i }))
+            if (components[i].activate) {
+              componentsArray.push(Project.utils.extends({}, components[i], { node: i }))
+            }
           }
           componentsArray.sort((p, q) => (p['.order'] - q['.order']))
           for (var j in componentsArray) {
