@@ -1,5 +1,4 @@
 <link rel="import" href="../scripts/pouchdb.html">
-<link rel="import" href="../../../../bower_components/polymer/lib/utils/async.html">
 
 <script>
   (() => {
@@ -55,8 +54,49 @@
 
     window.addEventListener('firebase-app-initialized', reinitializeFetchRealtimeData)
 
+    const deleteLocalDB = (path, child) => {
+      path = path.split('?')[0].replace('https://', '').replace('.json', '')
+      if (child) {
+        path = path + '/' + child
+      }
+      __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
+      const db = __openedDbs[localDbPathPrefix + path]
+      return db.allDocs({ limit: 1000 }).then((res) => {
+        var promises = []
+        for (var i in res.rows) {
+          promises.push(deleteLocalDB(path, res.rows[i].id))
+          promises.push(db.get(res.rows[i].id).then((doc) => {
+            console.log(doc)
+            return db.remove(doc).then((r) => {
+              console.log(r)
+            })
+          }))
+        }
+        promises.push(db.destroy().then(() => {
+          __openedDbs[localDbPathPrefix + path] = null
+        }))
+        return Promise.all(promises)
+      })
+    }
+
+    const deleteAuthLocalDB = () => {
+      firebaseAuthPaths.allDocs().then((res) => {
+        var promises = []
+        for (var i in res.rows) {
+          promises.push(deleteLocalDB(res.rows[i].id))
+        }
+        Promise.all(promises).then((r) => {
+          console.log(r)
+        })
+      })
+    }
+
     const updateLocalDB = (path, data, child, auth, del) => {
       path = path.split('?')[0].replace('https://', '').replace('.json', '')
+      if (del) {
+        return deleteLocalDB(path, child)
+      }
+
       if (child) {
         __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
         const parentDb = __openedDbs[localDbPathPrefix + path]
@@ -157,7 +197,7 @@
             }
 
             if (window.performance && Project.__build !== 'prod') {
-              console.log('fetch local', __firebaseRest[path], performance.now() - window.globalStart)
+              console.log('fetch local', performance.now() - window.globalStart)
             }
           }
         })
@@ -622,6 +662,35 @@
       }
     }
 
+    const setListeners = (name, element) => {
+      var { keys } = getKeyValuesInPath(element.__properties[name].firebasePath, element)
+      if (keys.length) {
+        var methodName = `__updatePropertyData("${name}", ${keys.join(', ')})`
+        console.log(methodName)
+        element._createMethodObserver(methodName)
+      }
+    }
+
+    const unsetListeners = (name, element) => {
+      var { keys } = getKeyValuesInPath(element.__properties[name].firebasePath, element)
+      for (var i in keys) {
+        // console.log(this.__observeEffects)
+        if (this.__observeEffects) {
+          var effects = this.__observeEffects[keys[i].split(/\./g)[0]]
+          var index = null
+          for (var j in effects) {
+            if (effects[j].info.args[0].value === name) {
+              index = j
+              break
+            }
+          }
+          if (index !== null) {
+            effects.splice(index, 1)
+          }
+        }
+      }
+    }
+
     const bindProperty = (name, element, properties) => {
       const {
         firebasePath,
@@ -638,7 +707,8 @@
         readOnce,
         paginated,
         type,
-        auth
+        auth,
+        readOnly
       } = properties[name]
       const computedPath = computePath(firebasePath, element)
       const computedOrderByChild = computeChild(properties[name].orderByChild, element)
@@ -651,6 +721,13 @@
       }
 
       element.__properties[name].url = getRestUrl(element.__properties[name], element)
+
+      if (!computedPath) {
+        element.__setValue(name, null, readOnly)
+        return
+      }
+
+      console.log(element.__properties[name].url, computedPath, firebasePath)
 
       getLocalDB(element.__properties[name].url, element, name)
 
@@ -716,10 +793,12 @@
 
     const unbindProperty = (name, element, property) => {
       const { url } = property[name]
-      const index = __elementProps[url].findIndex((item) => (item.element === element && item.name === name))
-      if (index >= 0) {
-        __elementProps[url].splice(__elementProps[url], 1)
-        unbindRef(url)
+      if (url && typeof __elementProps[url] === 'array') {
+        const index = __elementProps[url].findIndex((item) => (item.element === element && item.name === name))
+        if (index >= 0) {
+          __elementProps[url].splice(__elementProps[url], 1)
+          unbindRef(url)
+        }
       }
     }
 
@@ -732,7 +811,10 @@
           }
           return false
         })
-      bindings.forEach(name => { bindProperty(name, element, properties) })
+      bindings.forEach(name => {
+        bindProperty(name, element, properties)
+        setListeners(name, element)
+      })
     }
 
     const unbind = (element, properties) => {
@@ -775,6 +857,18 @@
           } else {
             this.set(name, value)
           }
+        }
+
+        __updatePropertyData (name) {
+          unsetListeners(name, this)
+          if (this.__properties) {
+            unbindProperty(name, this, this.__properties)
+            bindProperty(name, this, this.__properties)
+          }
+        }
+
+        __deleteAuthLocalDB () {
+          deleteAuthLocalDB()
         }
       }
     }

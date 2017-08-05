@@ -32,14 +32,14 @@
 
         connectedCallback () {
           super.connectedCallback()
-          for (var i = 0; i < 10; i++) {
-            setTimeout(() => {
-              this.shadowRoot.querySelector('.container').appendChild(document.createElement('firebase-property-example'))
-            }, i * 1000)
-          }
-          setTimeout(() => {
-            this.deleteProperties(i + 1)
-          }, (i + 1) * 1000)
+          // for (var i = 0; i < 10; i++) {
+          //   setTimeout(() => {
+          //     this.shadowRoot.querySelector('.container').appendChild(document.createElement('firebase-property-example'))
+          //   }, i * 1000)
+          // }
+          // setTimeout(() => {
+          //   this.deleteProperties(i + 1)
+          // }, (i + 1) * 1000)
         }
 
         deleteProperties (num) {

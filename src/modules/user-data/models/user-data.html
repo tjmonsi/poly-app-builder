@@ -4,6 +4,7 @@
 <script>
   (() => {
     const authSubscriptions = []
+    const firebaseAuthsDB = new window.PouchDB('firebaseAuths', { auto_compaction: true })
 
     window.Project.Mixins.UserData = (superClass) => {
       /**
@@ -236,8 +237,7 @@
 
         __authStateChanged () {
           // console.log('firebase')
-          var db = new window.PouchDB('firebaseAuths', { auto_compaction: true })
-          db.get('currentSession').then((doc) => {
+          firebaseAuthsDB.get('currentSession').then((doc) => {
             if ((this.user && !this.user.uid) || !this.user) {
               this._setProperty('user', Project.utils.extends({}, this.user, { uid: doc.uid }))
             }
@@ -262,15 +262,19 @@
                 // console.log('subscribing user')
                 this.auth = auth
                 var subscription = auth.onAuthStateChanged((user) => {
+                  this.__stateUserStatusKnown(true, appName)
                   if (user) {
-                    new window.PouchDB('firebaseAuths', { auto_compaction: true }).upsert('currentSession', (doc) => {
+                    firebaseAuthsDB.upsert('currentSession', (doc) => {
                       doc.uid = user.uid
                       return doc
                     })
                     this.__stateSignIn(user, appName)
                   } else {
-                    db.destroy()
-                    this.__deleteAuthDB()
+                    firebaseAuthsDB.upsert('currentSession', (doc) => {
+                      doc.uid = null
+                      return doc
+                    })
+                    this.__deleteAuthLocalDB()
                     this.__stateSignOut(user, appName)
                   }
                 }, this.__onError)
