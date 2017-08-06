@@ -3,13 +3,12 @@
 <script>
   (() => {
     const pathMatch = /\[\[[^$#\[\]\/]*\]\]/g
-    const localDbPathPrefix = 'firebasePath_'
     const staleTime = (window.Project.__dataRestStaleTime * 1000) || 60000
     const __firebaseRefs = {}
     const __elementProps = {}
     const __firebaseRest = {}
-    const __openedDbs = {}
-    const firebaseAuthPaths = new window.PouchDB('firebaseAuthPaths', {auto_compaction: true})
+    const __firebaseAuthPaths = new window.PouchDB('firebaseAuthPaths', {auto_compaction: true})
+    const __firebasePathsDB = new window.PouchDB('firebasePaths', {auto_compaction: true})
     const __debugOffline = false
 
     if (!window.firebase) {
@@ -54,161 +53,87 @@
 
     window.addEventListener('firebase-app-initialized', reinitializeFetchRealtimeData)
 
-    const deleteLocalDB = (path, child) => {
-      path = path.split('?')[0].replace('https://', '').replace('.json', '')
-      if (child) {
-        path = path + '/' + child
-      }
-      __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
-      const db = __openedDbs[localDbPathPrefix + path]
-      return db.allDocs({ limit: 1000 }).then((res) => {
-        var promises = []
-        for (var i in res.rows) {
-          promises.push(deleteLocalDB(path, res.rows[i].id))
-          promises.push(db.get(res.rows[i].id).then((doc) => {
-            console.log(doc)
-            return db.remove(doc).then((r) => {
-              console.log(r)
-            })
-          }))
-        }
-        promises.push(db.destroy().then(() => {
-          __openedDbs[localDbPathPrefix + path] = null
-        }))
-        return Promise.all(promises)
-      })
-    }
-
     const deleteAuthLocalDB = () => {
-      firebaseAuthPaths.allDocs().then((res) => {
-        var promises = []
+      __firebaseAuthPaths.allDocs().then((res) => {
         for (var i in res.rows) {
-          promises.push(deleteLocalDB(res.rows[i].id))
+          __firebasePathsDB.get(res.rows[i].id).then((doc) => {
+            __firebasePathsDB.remove(doc)
+          })
         }
-        Promise.all(promises).then((r) => {
-          console.log(r)
-        })
       })
     }
 
-    const updateLocalDB = (path, data, child, auth, del) => {
+    const updateLocalDB = (path, data, auth) => {
       path = path.split('?')[0].replace('https://', '').replace('.json', '')
-      if (del) {
-        return deleteLocalDB(path, child)
-      }
-
-      if (child) {
-        __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
-        const parentDb = __openedDbs[localDbPathPrefix + path]
-        path = path + '/' + child
-        parentDb.upsert(child, (doc) => {
-          doc.childPath = path
-          doc.update = new Date()
-          return doc
-        })
-      }
-
+      __firebasePathsDB.upsert(path, (doc) => {
+        doc.value = data
+        doc.auth = auth
+        return doc
+      })
       if (auth) {
-        firebaseAuthPaths.upsert(path, (doc) => {
+        __firebaseAuthPaths.upsert(path, (doc) => {
           doc.auth = auth
           return doc
         })
       }
-
-      if (typeof data === 'object') {
-        for (var prop in data) {
-          updateLocalDB(path, data[prop], prop, auth, del)
-        }
-      } else {
-        __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
-        const db = __openedDbs[localDbPathPrefix + path]
-        db.upsert('$value', (doc) => {
-          doc.value = data
-          doc.auth = auth
-          return doc
-        })
-      }
-    }
-
-    const localDBData = (path, child) => {
-      path = path.split('?')[0].replace('https://', '').replace('.json', '')
-      if (child) {
-        path = path + '/' + child
-      }
-      __openedDbs[localDbPathPrefix + path] = __openedDbs[localDbPathPrefix + path] || new window.PouchDB(localDbPathPrefix + path, {auto_compaction: true})
-      const db = __openedDbs[localDbPathPrefix + path]
-      return db.allDocs({ limit: 1000 }).then((res) => {
-        var promises = []
-        for (var i in res.rows) {
-          if (res.rows[i].id === '$value') {
-            return db.get(res.rows[i].id).then((doc) => (doc.value))
-          }
-          promises.push(localDBData(path, res.rows[i].id))
-        }
-        return Promise.all(promises).then((snap) => {
-          var data = {}
-          for (var i in res.rows) {
-            data[res.rows[i].id] = snap[i]
-          }
-          return data
-        })
-      })
     }
 
     const getLocalDB = (path, element, name) => {
-      if (!__firebaseRest[path] || !__firebaseRest[path].data) {
-        localDBData(path).then((snapshot) => {
-          if (!__firebaseRest[path] || !__firebaseRest[path].data) {
-            const { type, desc, paginated, readOnly, computedOrderByChild, orderByKey } = element.__properties[name]
-            if (type === Array) {
-              var data = paginated ? element[name] || [] : []
-              for (var s in snapshot) {
-                var childSnapshot = snapshot[s]
-                var key = s
-                var value = valueWithKey(key, childSnapshot)
+      path = path.split('?')[0].replace('https://', '').replace('.json', '')
+      return __firebasePathsDB.get(path).then((doc) => {
+        var snapshot = doc.value
+        if (!__firebaseRest[path] || !__firebaseRest[path].data) {
+          const { type, desc, paginated, readOnly, computedOrderByChild, orderByKey } = element.__properties[name]
+          if (type === Array) {
+            var data = paginated ? element[name] || [] : []
+            for (var s in snapshot) {
+              var childSnapshot = snapshot[s]
+              var key = s
+              var value = valueWithKey(key, childSnapshot)
 
-                if (paginated) {
-                  var flag = true
-                  for (var i in data) {
-                    if (data[i].$key === key) {
-                      flag = false
-                      break
-                    }
+              if (paginated) {
+                var flag = true
+                for (var i in data) {
+                  if (data[i].$key === key) {
+                    flag = false
+                    break
                   }
-                  if (flag) {
-                    data.push(value)
-                  }
-                } else {
+                }
+                if (flag) {
                   data.push(value)
                 }
+              } else {
+                data.push(value)
               }
-
-              data = sortData(data, computedOrderByChild, orderByKey)
-
-              if (desc) {
-                data.reverse()
-              }
-
-              element.__setValue(name, data, readOnly)
-              element.notifySplices(name)
-              element.notifyPath(name)
-            } else {
-              element.__setValue(name, snapshot, readOnly)
             }
 
-            if (window.performance && Project.__build !== 'prod') {
-              console.log('fetch local', performance.now() - window.globalStart)
+            data = sortData(data, computedOrderByChild, orderByKey)
+
+            if (desc) {
+              data.reverse()
             }
+
+            element.__setValue(name, data, readOnly)
+            element.notifySplices(name)
+            element.notifyPath(name)
+          } else {
+            element.__setValue(name, snapshot, readOnly)
           }
-        })
-      }
+
+          if (window.performance && Project.__build !== 'prod') {
+            console.log('fetch local', performance.now() - window.globalStart)
+          }
+        }
+      }).catch((e) => {
+        console.log(path, e)
+      })
     }
 
-    const closeLocalDB = (i) => {
-      __openedDbs[i].close().then(() => {
-        __openedDbs[i] = null
-      }).catch(err => {
-        console.log(i, err)
+    const deleteItemLocalDB = (path, key) => {
+      path = path.split('?')[0].replace('https://', '').replace('.json', '')
+      __firebasePathsDB.upsert(path, (doc) => {
+        delete doc.value[key]
+        return doc
       })
     }
 
@@ -388,7 +313,7 @@
     }
 
     const onValue = (i, auth, snapshot) => {
-      updateLocalDB(i, snapshot.val(), null, auth)
+      updateLocalDB(i, snapshot.val(), auth)
       __firebaseRest[i] = __firebaseRest[i] || {}
       __firebaseRest[i].data = snapshot.val()
       if (__elementProps[i].length) {
@@ -399,7 +324,6 @@
     }
 
     const onChildAdded = (i, auth, snapshot, previousChildKey) => {
-      updateLocalDB(i, snapshot.val(), snapshot.key, auth)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
@@ -428,7 +352,7 @@
     }
 
     const onChildRemoved = (i, auth, snapshot) => {
-      updateLocalDB(i, snapshot.val(), snapshot.key, auth, true)
+      deleteItemLocalDB(i, snapshot.key)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
@@ -447,7 +371,6 @@
     }
 
     const onChildMoved = (i, auth, snapshot, previousChildKey) => {
-      updateLocalDB(i, snapshot.val(), snapshot.key, auth)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
@@ -476,7 +399,6 @@
     }
 
     const onChildChanged = (i, auth, snapshot) => {
-      updateLocalDB(i, snapshot.val(), snapshot.key, auth)
       if (__elementProps[i].length) {
         __elementProps[i].forEach((item) => {
           const { element, name } = item
@@ -727,8 +649,6 @@
         return
       }
 
-      console.log(element.__properties[name].url, computedPath, firebasePath)
-
       getLocalDB(element.__properties[name].url, element, name)
 
       __elementProps[element.__properties[name].url] = __elementProps[element.__properties[name].url] || []
@@ -782,12 +702,12 @@
         __firebaseRefs[url].ref = null
         __firebaseRefs[url].onset = false
 
-        var path = url.split('?')[0].replace('https://', '').replace('.json', '')
-        for (var i in __openedDbs) {
-          if (i.match(path) && __openedDbs[i]) {
-            closeLocalDB(i)
-          }
-        }
+        // var path = url.split('?')[0].replace('https://', '').replace('.json', '')
+        // for (var i in __openedDbs) {
+        //   if (i.match(path) && __openedDbs[i]) {
+        //     closeLocalDB(i)
+        //   }
+        // }
       }
     }
 
