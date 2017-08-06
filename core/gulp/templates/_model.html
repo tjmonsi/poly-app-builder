@@ -1,4 +1,4 @@
-<link rel="import" href="../../firebase-mixin/firebase-mixin.html">
+<link rel="import" href="../../../../core/modules/firebase-property-mixin/mixins/firebase-property-mixin.html">
 <link rel="import" href="../reducers/reducers.html">
 
 <script>
@@ -8,7 +8,7 @@
       * @polymer
       * @extends HTMLElement
       */
-      return class extends window.Project.Mixins.FirebaseMixin(superClass) {
+      return class extends window.Project.Mixins.FirebasePropertyMixin(superClass) {
         static get properties () {
           var properties = {
             <%= modelNameSlug %>: {

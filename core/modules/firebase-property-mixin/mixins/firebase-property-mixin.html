@@ -56,8 +56,24 @@
     const deleteAuthLocalDB = () => {
       __firebaseAuthPaths.allDocs().then((res) => {
         for (var i in res.rows) {
-          __firebasePathsDB.get(res.rows[i].id).then((doc) => {
-            __firebasePathsDB.remove(doc)
+          __firebasePathsDB.get(res.rows[i].id)
+          .then((doc) => {
+            return __firebasePathsDB.remove(doc)
+          })
+          .catch((e) => {
+            if (e.name !== 'not_found') {
+              console.log(e)
+            }
+          })
+
+          __firebaseAuthPaths.get(res.rows[i].id)
+          .then((doc) => {
+            return __firebaseAuthPaths.remove(doc)
+          })
+          .catch((e) => {
+            if (e.name !== 'not_found') {
+              console.log(e)
+            }
           })
         }
       })
@@ -121,7 +137,7 @@
           }
 
           if (window.performance && Project.__build !== 'prod') {
-            console.log('fetch local', performance.now() - window.globalStart)
+            console.log('fetch local', element, name, performance.now() - window.globalStart)
           }
         }
       }).catch((e) => {
@@ -229,7 +245,7 @@
       }
     }
 
-    const onFetchRest = (json, element, name) => {
+    const onFetchRest = (json, element, name, useMemory) => {
       const {
         readOnly,
         type,
@@ -265,10 +281,10 @@
         element.__setValue(name, data, readOnly)
         element.__properties[name].loadedViaRest = true
       } else {
-        this.__setValue(name, json, readOnly)
+        element.__setValue(name, json, readOnly)
       }
       if (window.performance && Project.__build !== 'prod') {
-        console.log('fetch rest', performance.now() - window.globalStart)
+        console.log('fetch rest', element, name, useMemory ? 'uses memory' : 'uses fetch', performance.now() - window.globalStart)
       }
     }
 
@@ -279,7 +295,7 @@
       }
       // if data has been loaded, just use original data that has been fetched (stale up to 60 seconds)
       if (__firebaseRest[i] && __firebaseRest[i].data && new Date() - __firebaseRest[i].time < staleTime) {
-        return onFetchRest(__firebaseRest[i].data, element, name)
+        return onFetchRest(__firebaseRest[i].data, element, name, true)
       }
 
       __firebaseRest[i] = __firebaseRest[i] || {}
@@ -304,9 +320,11 @@
             }
             updateLocalDB(i, json, element.__properties[name].auth)
             __firebaseRest[i].data = json
+            var flag = false
             while (__firebaseRest[i].waiting.length) {
               var item = __firebaseRest[i].waiting.pop()
-              onFetchRest(json, item.element, item.name)
+              onFetchRest(json, item.element, item.name, flag)
+              flag = true
             }
           })
       }
