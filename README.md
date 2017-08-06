@@ -19,10 +19,14 @@ The Poly-app-builder
     * `gulp watch` — builds the project to `dist/public` and runs the program in `localhost:5000`
     * `gulp watch -p $IP -h $HOST` - builds the project to `dist/public` and runs the program. This is for C9 users
     * `gulp` - builds the project
-    * `export ENV=production && gulp build` — builds minified project for production
+    * `export ENV=production && gulp build` — copies `dev.json` to `prod.json` and builds minified project for production
     * `firebase serve` - runs the project (if done after gulp build, runs production) at `localhost:5000`
     * `gulp copy-config --source [SOURCE_CONFIG_NAME] --dest [DESTINATION_CONFIG_NAME]` - copies the content of the `[SOURCE_CONFIG_NAME].json` file to `[DESTINATION_CONFIG_NAME].json` file
-    *
+    * `gulp create-module` - to create a module
+    * `gulp create-model` - to create a data model mixin and Redux actions for the model. Wraps the model mixin with FirebasePropertyMixin
+    * `gulp create-page` - to create a simple page along with a url
+    * `gulp create-component` - to create a simple reusable component
+    * `gulp delete-module` - delete's module and removes the module in the `dev.json` file
 * Learn:
     * `dist/public/` dir is fully auto-generated and served by HTTP server.
     * `core/` holds all project core codes. Touch at your own risk
