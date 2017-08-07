@@ -119,10 +119,10 @@ const runServer = (done) => {
   const args = ['serve']
   if (process.argv.indexOf('--port') > 0 && process.argv.indexOf('--port') + 1 < process.argv.length) {
     args.push('-p')
-    args.push(process.argv.indexOf('--port') + 1)
+    args.push(process.argv[process.argv.indexOf('--port') + 1])
   } else if (process.argv.indexOf('--host') > 0 && process.argv.indexOf('-h') + 1 < process.argv.length) {
     args.push('-o')
-    args.push(process.argv.indexOf('--host') + 1)
+    args.push(process.argv[process.argv.indexOf('--host') + 1])
   }
   const fb = spawn('firebase', args)
 
