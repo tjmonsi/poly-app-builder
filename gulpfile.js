@@ -117,15 +117,9 @@ const autoCopyProd = (done) => {
 
 const runServer = (done) => {
   const args = ['serve']
-  if (process.argv.indexOf('-p') > 0 && process.argv.indexOf('-p') + 1 < process.argv.length) {
-    args.push('-p')
-    args.push(process.argv.indexOf('-p') + 1)
-  } else if (process.argv.indexOf('--port') > 0 && process.argv.indexOf('--port') + 1 < process.argv.length) {
+  if (process.argv.indexOf('--port') > 0 && process.argv.indexOf('--port') + 1 < process.argv.length) {
     args.push('-p')
     args.push(process.argv.indexOf('--port') + 1)
-  } else if (process.argv.indexOf('-h') > 0 && process.argv.indexOf('-h') + 1 < process.argv.length) {
-    args.push('-o')
-    args.push(process.argv.indexOf('-h') + 1)
   } else if (process.argv.indexOf('--host') > 0 && process.argv.indexOf('-h') + 1 < process.argv.length) {
     args.push('-o')
     args.push(process.argv.indexOf('--host') + 1)
@@ -151,4 +145,4 @@ const watch = gulp.series('clean-build', createFolder, generateSW, gulp.parallel
 
 gulp.task('default', gulp.series(checkDevJson, 'compile-firebase-json', series, generateSW))
 gulp.task('watch', gulp.series(checkDevJson, 'compile-firebase-json', watch, runServer))
-gulp.task('build', gulp.series(autoCopyProd, 'compile-firebase-json', series, 'polymer-build', 'generate-sw'))
+gulp.task('build', gulp.series('compile-firebase-json', series, 'polymer-build', 'generate-sw'))
