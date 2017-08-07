@@ -7,6 +7,8 @@
     "analytics": "UA-103026201-1",
     "firebaseVersion": "4.2.0",
     "database": "dev",
+    "waitBeforeFetchingSameURLInRest": 60,
+    "sentryUrl": "https://89e426779a3a4867abe48f06e05be299@sentry.io/200095",
     "firebaseConfig": [
       {
         "apiKey": "AIzaSyDdpZgjWiBnIo4B8lPYwUygukV2YfAuiLk",
@@ -41,7 +43,8 @@
     "project-app-drawer": "modules/project-layout/components/project-app-drawer.html"
   },
   "routing": {
-    "/": "home-page"
+    "/": "home-page-2",
+    "/p/:id": "home-page"
   },
   "httpCodes": {
     "not-found": "not-found-page",
