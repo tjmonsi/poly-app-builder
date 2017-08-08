@@ -615,8 +615,8 @@
       var { keys } = getKeyValuesInPath(element.__properties[name].firebasePath, element)
       for (var i in keys) {
         // console.log(this.__observeEffects)
-        if (this.__observeEffects) {
-          var effects = this.__observeEffects[keys[i].split(/\./g)[0]]
+        if (element.__observeEffects) {
+          var effects = element.__observeEffects[keys[i].split(/\./g)[0]]
           var index = null
           for (var j in effects) {
             if (effects[j].info.args[0].value === name) {

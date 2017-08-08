@@ -7,12 +7,8 @@
       {
         "source": "/",
         "destination": "/index.html"
-      },
-      {
-        "source": "/p/**",
-        "destination": "/index.html"
       }
     ],
-    "public": "dist/public"
+    "public": "dist/prod_temp/build"
   }
 }
