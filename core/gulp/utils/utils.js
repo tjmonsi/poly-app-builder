@@ -3,7 +3,8 @@ const fs = require('fs')
 const sources = {
   modulesHtml: ['core/modules/**/*.html', 'src/modules/**/*.html'],
   bower: 'bower_components/**/*.*',
-  index: 'core/root/*.hbs',
+  index: 'core/root/**.hbs',
+  forceIndex: 'core/root/index.hbs',
   appShell: 'core/shell/app-shell.html',
   opts: ['core/opts/*.html', 'src/opts/*.html'],
   sass: ['core/modules/**/*.scss', 'src/modules/**/*.scss'],

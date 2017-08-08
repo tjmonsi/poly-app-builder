@@ -20,7 +20,7 @@ gulp.task('compile-404', () => {
       }
     }
   })
-  return gulp.src(sources.index)
+  return gulp.src(sources.forceIndex)
     .pipe(hbStream)
     .pipe(rename(function (path) {
       path.basename = '404'
