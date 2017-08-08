@@ -15,6 +15,7 @@ gulp.task('generate-sw', (done) => {
       [/^(?!(\/__)|(\/service-worker\.js))/]
     ],
     globIgnores: [
+      '404.html',
       'service-worker.js',
       'sw.js',
       'routing-sw.js',
@@ -35,6 +36,10 @@ gulp.task('generate-sw', (done) => {
       },
       {
         urlPattern: /^https:\/\/www.google-analytics.com\/analytics.js/,
+        handler: 'networkFirst'
+      },
+      {
+        urlPattern: /^https:\/\/polyfill.io/,
         handler: 'networkFirst'
       }
     ]
